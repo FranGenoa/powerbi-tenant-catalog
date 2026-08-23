@@ -1,0 +1,191 @@
+/// One row per report (Power BI or paginated) in the tenant.
+table Report
+	lineageTag: 2f2ec360-c7a2-4784-9dc6-78cbd5da7193
+
+	/// Number of reports in the current filter context.
+	measure Reports = COUNTROWS ( 'Report' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 1a0f95b6-a1f0-41f8-b494-adda07f41732
+
+	/// Reports whose semantic model was not found in the scan - broken or cross-workspace bindings.
+	measure 'Orphan Reports' =
+			CALCULATE (
+			    [Reports],
+			    FILTER ( 'Report', ISBLANK ( RELATED ( 'Semantic Model'[Semantic Model Name] ) ) )
+			)
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: f9afbd4c-e787-40de-aa3f-69b832cfaafb
+
+	/// Paginated (RDL) reports.
+	measure 'Paginated Reports' = CALCULATE ( [Reports], 'Report'[Report Type] = "PaginatedReport" )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 8f7abcf3-97fb-4b02-a731-c4150458710a
+
+	/// Reports modified in the last 90 days.
+	measure 'Reports Modified Last 90 Days' = CALCULATE ( [Reports], DATESINPERIOD ( 'Date'[Date], TODAY (), -90, DAY ) )
+		formatString: #,##0
+		displayFolder: Adoption
+		lineageTag: 7266065f-120b-4896-8560-0ead399f5223
+
+	/// Reports not modified for more than 180 days - candidates for review or retirement.
+	measure 'Stale Reports' =
+			CALCULATE (
+			    [Reports],
+			    KEEPFILTERS ( FILTER ( ALL ( 'Date'[Date] ), 'Date'[Date] < TODAY () - 180 ) )
+			)
+		formatString: #,##0
+		displayFolder: Adoption
+		lineageTag: 10629006-11a6-435b-8ce6-29f8f64606d1
+
+	/// Share of reports not modified for more than 180 days.
+	measure 'Stale Reports %' = DIVIDE ( [Stale Reports], [Reports] )
+		formatString: 0.0%
+		displayFolder: Adoption
+		lineageTag: b7f29f6d-f788-4ff0-a1b7-7e57bd49e53b
+
+	/// Most recent report modification date in scope.
+	measure 'Last Report Change' = MAX ( 'Report'[Modified Date Time] )
+		formatString: yyyy-mm-dd
+		displayFolder: Adoption
+		lineageTag: f203a1fd-90e8-4817-a083-704d78cec045
+
+	/// Distinct principals that last modified a report.
+	measure 'Distinct Report Authors' = DISTINCTCOUNT ( 'Report'[Modified By] )
+		formatString: #,##0
+		displayFolder: Adoption
+		lineageTag: 2a6f73bf-b32d-4ce2-ad1f-a04d9b2f8995
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: a63395af-e668-4a22-9567-fa78d0e84cf5
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: c6eef31d-4d86-4d36-b6ba-d2016187c92f
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Modified Date Key'
+		dataType: int64
+		isHidden
+		lineageTag: be0a4740-8e92-4504-89dc-de7651a870a0
+		summarizeBy: none
+		sourceColumn: modifiedDateKey
+
+	column 'Report Id'
+		dataType: string
+		isHidden
+		lineageTag: dd51cb8b-5993-4a64-bbf9-8ed0f62ef00a
+		sourceColumn: reportId
+
+	/// Display name of the report.
+	column 'Report Name'
+		dataType: string
+		lineageTag: 9c64f9cc-02b2-47ec-aceb-816ff463dcad
+		sourceColumn: reportName
+
+	/// Report type, e.g. PowerBIReport or PaginatedReport.
+	column 'Report Type'
+		dataType: string
+		lineageTag: 40644a0c-c5fb-4ca4-846b-f900569dd764
+		sourceColumn: reportType
+
+	column 'Report Description'
+		dataType: string
+		lineageTag: 71fd841e-19bb-4c63-8187-0ae10cfd7ae6
+		sourceColumn: description
+
+	column 'Created Date Time'
+		dataType: dateTime
+		lineageTag: d2b4be61-f345-481c-982b-6421869cd9b7
+		summarizeBy: none
+		sourceColumn: createdDateTime
+
+	/// Last time the report definition was modified.
+	column 'Modified Date Time'
+		dataType: dateTime
+		lineageTag: 74ed4d11-6662-4b69-b338-3e575e050638
+		summarizeBy: none
+		sourceColumn: modifiedDateTime
+
+	column 'Created By'
+		dataType: string
+		lineageTag: ac839508-2151-4d8f-a5a2-b26a62b72611
+		sourceColumn: createdBy
+
+	column 'Modified By'
+		dataType: string
+		lineageTag: bed1b7e7-9812-4633-97f9-0d04593c70e9
+		sourceColumn: modifiedBy
+
+	column Endorsement
+		dataType: string
+		lineageTag: 7d1fc5a8-6b29-443f-970b-f1676bf363df
+		sourceColumn: endorsement
+
+	column 'Certified By'
+		dataType: string
+		lineageTag: aca21bd4-bedc-4cfe-bc2d-0702170227ed
+		sourceColumn: certifiedBy
+
+	column 'Sensitivity Label Id'
+		dataType: string
+		isHidden
+		lineageTag: c55e98de-42d9-4358-9267-67be98817046
+		sourceColumn: sensitivityLabelId
+
+	column 'App Id'
+		dataType: string
+		isHidden
+		lineageTag: 2aea4a31-5c91-4157-aba5-c9dcacae9781
+		sourceColumn: appId
+
+	column 'Original Report Object Id'
+		dataType: string
+		isHidden
+		lineageTag: 5d841793-1407-42aa-9aaf-689d231a4491
+		sourceColumn: originalReportObjectId
+
+	column 'Report Url'
+		dataType: string
+		lineageTag: 6a81a890-5d40-47ed-8b9c-c779b2f5cf1c
+		dataCategory: WebUrl
+		sourceColumn: webUrl
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: c51183c8-603e-4e69-830c-4aab1db2c4ed
+		sourceColumn: semanticModelId
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 1dacfc9d-79ea-4ab1-890d-cdb5cb5cae56
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: d413cafc-dda6-4e48-b362-b423a76bd69c
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 09dc740d-e1c3-4a6a-a119-a6fcd4909e22
+		sourceColumn: scanRunId
+
+	partition Report = entity
+		mode: directLake
+		source
+			entityName: pbi_reports
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

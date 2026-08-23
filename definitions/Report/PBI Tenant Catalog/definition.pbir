@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
+  "version": "4.0",
+  "datasetReference": {
+    "byConnection": {
+      "connectionString": "Data Source=\"powerbi://api.powerbi.com/v1.0/myorg/PBI Catalog\";initial catalog=\"PBI Tenant Catalog\";integrated security=ClaimsToken;semanticmodelid=321d7ad0-eb2b-46a5-b696-b1ce3111d8c0"
+    }
+  }
+}

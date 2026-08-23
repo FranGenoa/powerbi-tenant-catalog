@@ -1,0 +1,207 @@
+/// One row per semantic model (dataset) in the tenant.
+table 'Semantic Model'
+	lineageTag: 6c38e200-380c-4c84-b864-c721b2bbdbbe
+
+	/// Number of semantic models (datasets) in the current filter context.
+	measure 'Semantic Models' = COUNTROWS ( 'Semantic Model' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 3c5e6f8e-f6b4-4f96-bf0e-349d71e2b0de
+
+	/// Semantic models endorsed as Certified.
+	measure 'Certified Models' = CALCULATE ( [Semantic Models], 'Semantic Model'[Endorsement] = "Certified" )
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: 4dc78334-aa60-4f89-b84b-9f67c8d89339
+
+	/// Semantic models endorsed as Promoted.
+	measure 'Promoted Models' = CALCULATE ( [Semantic Models], 'Semantic Model'[Endorsement] = "Promoted" )
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: 43600988-02ad-441d-9cee-8ddda2eade7b
+
+	/// Share of semantic models that carry a Certified or Promoted endorsement.
+	measure 'Endorsed Models %' = DIVIDE ( [Certified Models] + [Promoted Models], [Semantic Models] )
+		formatString: 0.0%
+		displayFolder: Governance
+		lineageTag: f8f02f3c-f2a8-4681-b025-cbb001f537e6
+
+	/// Semantic models that no report is built on - candidates for retirement.
+	measure 'Models without Reports' =
+			SUMX (
+			    VALUES ( 'Semantic Model'[Semantic Model Key] ),
+			    IF ( ISBLANK ( CALCULATE ( COUNTROWS ( 'Report' ) ) ), 1, 0 )
+			)
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: c292bde8-04e1-4ffd-902d-ac3b729500b2
+
+	/// Distinct users or service principals that own semantic models.
+	measure 'Distinct Model Owners' = DISTINCTCOUNT ( 'Semantic Model'[Configured By] )
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: fbddabea-a5ff-4c65-8aec-c377704c3a92
+
+	/// Average number of tables per semantic model.
+	measure 'Tables per Model' = DIVIDE ( [Model Tables], [Semantic Models] )
+		formatString: #,##0.0
+		displayFolder: Complexity
+		lineageTag: 97436673-ae56-4733-abd1-39ac21056ec5
+
+	/// Average number of measures per semantic model.
+	measure 'Measures per Model' = DIVIDE ( [Measures], [Semantic Models] )
+		formatString: #,##0.0
+		displayFolder: Complexity
+		lineageTag: 7d6a176c-28a5-4d3c-a4f8-7ddc4e8f3dd0
+
+	/// Average number of columns per semantic model.
+	measure 'Columns per Model' = DIVIDE ( [Columns], [Semantic Models] )
+		formatString: #,##0.0
+		displayFolder: Complexity
+		lineageTag: dca0bfeb-e0a6-402e-bf1d-c1b678ec3917
+
+	/// Average number of reports built on each semantic model.
+	measure 'Reports per Model' = DIVIDE ( [Reports], [Semantic Models] )
+		formatString: #,##0.0
+		displayFolder: Complexity
+		lineageTag: 6eff18ff-aa4f-4fc3-afeb-a5600bf5d0a7
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: 3b1047c1-187a-4884-b546-7861f5d4ed38
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: 780ba42b-b1fb-4d29-bbd8-0722b3b87503
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: d489efe7-e320-45ea-a8e3-c74ddd74a89f
+		sourceColumn: semanticModelId
+
+	/// Name of the semantic model (dataset).
+	column 'Semantic Model Name'
+		dataType: string
+		lineageTag: b14efee6-057d-43a6-a57f-e5555f30a354
+		sourceColumn: semanticModelName
+
+	column 'Semantic Model Description'
+		dataType: string
+		lineageTag: f23ace9c-18a0-4f0c-94cb-ecd11b44479f
+		sourceColumn: description
+
+	/// User principal that owns / configured the semantic model.
+	column 'Configured By'
+		dataType: string
+		lineageTag: 7e466114-a85b-41b0-9428-10c857c22224
+		sourceColumn: configuredBy
+
+	column 'Created Date'
+		dataType: dateTime
+		lineageTag: e77ad3ea-b1a5-4375-8e1c-493c08b371b0
+		sourceColumn: createdDate
+
+	column 'Content Provider Type'
+		dataType: string
+		lineageTag: 7cf93729-6b23-4361-be2d-6bf19eb498e9
+		sourceColumn: contentProviderType
+
+	/// Storage mode of the model, e.g. Abf (import), PremiumFiles, DirectLake.
+	column 'Target Storage Mode'
+		dataType: string
+		lineageTag: 1389bfe8-ec25-4569-8e98-6d05a9092c93
+		sourceColumn: targetStorageMode
+
+	/// Endorsement status: Certified, Promoted or blank.
+	column Endorsement
+		dataType: string
+		lineageTag: 00f3994f-dde5-4be1-b6dc-da1bcb7a6335
+		sourceColumn: endorsement
+
+	column 'Certified By'
+		dataType: string
+		lineageTag: 023d94be-b698-4b6c-a21c-5f28e6f4bc76
+		sourceColumn: certifiedBy
+
+	column 'Sensitivity Label Id'
+		dataType: string
+		isHidden
+		lineageTag: 7d936254-7770-46e4-a78d-cc64bc6af44c
+		sourceColumn: sensitivityLabelId
+
+	column 'Table Count'
+		dataType: int64
+		isHidden
+		lineageTag: b4c4f2f8-1783-463c-9f67-3c3a51bfe363
+		summarizeBy: sum
+		sourceColumn: tableCount
+
+	column 'Column Count'
+		dataType: int64
+		isHidden
+		lineageTag: afa576ab-e22f-4b49-bb0a-b97e4cf76887
+		summarizeBy: sum
+		sourceColumn: columnCount
+
+	column 'Measure Count'
+		dataType: int64
+		isHidden
+		lineageTag: e6c02cb4-2715-4ace-8ecb-995a64a80809
+		summarizeBy: sum
+		sourceColumn: measureCount
+
+	column 'Upstream Dataflows'
+		dataType: string
+		isHidden
+		lineageTag: 84d0eded-6e90-4bf3-9fa4-472fc06e6ad3
+		sourceColumn: upstreamDataflows
+
+	column 'Upstream Datasets'
+		dataType: string
+		isHidden
+		lineageTag: 5e89d45e-9db1-4924-9fb6-f1c009c9b60a
+		sourceColumn: upstreamDatasets
+
+	column 'Upstream Datamarts'
+		dataType: string
+		isHidden
+		lineageTag: e143c3c6-4daa-4dda-a935-21b41a34e2d2
+		sourceColumn: upstreamDatamarts
+
+	column 'Semantic Model Url'
+		dataType: string
+		lineageTag: 972f398f-5669-4254-893e-2cb6163d83e6
+		dataCategory: WebUrl
+		sourceColumn: webUrl
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 7c2d431b-c021-448c-9641-604b4d56274e
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: 95478acc-f648-4607-b3bd-1ee132137634
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 47397cc0-94e4-4c10-bf67-dd567ce9c299
+		sourceColumn: scanRunId
+
+	partition 'Semantic Model' = entity
+		mode: directLake
+		source
+			entityName: pbi_semantic_models
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

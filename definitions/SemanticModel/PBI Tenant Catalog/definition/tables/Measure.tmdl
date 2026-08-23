@@ -1,0 +1,180 @@
+/// One row per DAX measure across every semantic model in the tenant.
+table Measure
+	lineageTag: 3e36d486-cfbb-48fb-9e51-9361e030ac08
+
+	/// Number of DAX measures across all semantic models.
+	measure Measures = COUNTROWS ( 'Measure' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 55baf2bc-5a6f-42aa-b7db-71ca04c07632
+
+	/// Measures hidden from report authors.
+	measure 'Hidden Measures' = CALCULATE ( [Measures], 'Measure'[Is Hidden] = TRUE () )
+		formatString: #,##0
+		displayFolder: Design Quality
+		lineageTag: 1255c6b5-a108-4589-a00d-2e88fb43c7cc
+
+	/// Measures that have no description filled in.
+	measure 'Undocumented Measures' = CALCULATE ( [Measures], ISBLANK ( 'Measure'[Measure Description] ) )
+		formatString: #,##0
+		displayFolder: Documentation
+		lineageTag: 40c5c596-3103-4bab-98ea-208ce72443a0
+
+	/// Share of measures that carry a description.
+	measure 'Documented Measures %' = DIVIDE ( [Measures] - [Undocumented Measures], [Measures] )
+		formatString: 0.0%
+		displayFolder: Documentation
+		lineageTag: 73fb7e49-ddeb-484e-ac27-d44345261bcb
+
+	/// Measures that have no explicit format string set.
+	measure 'Measures without Format String' = CALCULATE ( [Measures], ISBLANK ( 'Measure'[Format String] ) )
+		formatString: #,##0
+		displayFolder: Design Quality
+		lineageTag: 355bffe6-2988-4742-9f52-b86f4784bb9f
+
+	/// Average number of characters in the DAX expression.
+	measure 'Avg DAX Length' = AVERAGE ( 'Measure'[DAX Length] )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: 3df10399-62e0-41c5-b92e-b30bab7f570e
+
+	/// Longest DAX expression, in characters.
+	measure 'Max DAX Length' = MAX ( 'Measure'[DAX Length] )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: 4f5e31d9-ce7f-470d-b73e-563eeb09ed62
+
+	/// Total lines of DAX written across all measures.
+	measure 'Total DAX Lines' = SUM ( 'Measure'[DAX Line Count] )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: 790c4abd-e7fa-41aa-9519-3020b5fbcb1a
+
+	/// Measures whose DAX expression exceeds 500 characters.
+	measure 'Complex Measures' = CALCULATE ( [Measures], 'Measure'[DAX Length] > 500 )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: a244a99c-978c-4178-92f3-fa36a06fa596
+
+	/// Share of measures whose DAX expression exceeds 500 characters.
+	measure 'Complex Measures %' = DIVIDE ( [Complex Measures], [Measures] )
+		formatString: 0.0%
+		displayFolder: Complexity
+		lineageTag: 8270dcc3-8f22-4201-8aeb-69345141ef36
+
+	/// Distinct measure names in scope - compare with Measures to spot duplicated logic across models.
+	measure 'Distinct Measure Names' = DISTINCTCOUNT ( 'Measure'[Measure Name] )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: 9c5ddb04-5e63-4884-b31e-c5678b7003f6
+
+	column 'Model Table Key'
+		dataType: int64
+		isHidden
+		lineageTag: ee6e998f-5d26-4645-a677-d5bec8693452
+		summarizeBy: none
+		sourceColumn: modelTableKey
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: e49a19ec-2535-4b20-a742-79930ae0700f
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: cb0f3f6f-4185-49a6-9d32-1bf2a9af44ad
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Name of the DAX measure.
+	column 'Measure Name'
+		dataType: string
+		lineageTag: aceed118-db70-4028-9a5b-a6858e3bcf37
+		sourceColumn: measureName
+
+	/// Full DAX expression behind the measure.
+	column 'DAX Expression'
+		dataType: string
+		lineageTag: 084ae49c-f7c4-43e8-8fde-bd1b9832484a
+		sourceColumn: daxExpression
+
+	column 'Measure Description'
+		dataType: string
+		lineageTag: 926fa03e-7e24-47e0-a71a-5f8bba6ef8c7
+		sourceColumn: description
+
+	column 'Is Hidden'
+		dataType: boolean
+		lineageTag: c48d0bdc-16e1-4486-8ca5-71b4e56fc223
+		sourceColumn: isHidden
+
+	column 'Display Folder'
+		dataType: string
+		lineageTag: b3367074-d22d-47f1-965c-2cfd5f197885
+		sourceColumn: displayFolder
+
+	column 'Format String'
+		dataType: string
+		lineageTag: 50fa1d46-f4ec-435f-ac16-98529459f71b
+		sourceColumn: formatString
+
+	/// Number of characters in the DAX expression - a simple complexity proxy.
+	column 'DAX Length'
+		dataType: int64
+		isHidden
+		lineageTag: 759bfc93-0a8b-42eb-b433-1758f2b8a251
+		summarizeBy: sum
+		sourceColumn: daxLength
+
+	column 'DAX Line Count'
+		dataType: int64
+		isHidden
+		lineageTag: d74de0e5-3161-4efc-bb96-8131387f1e8a
+		summarizeBy: sum
+		sourceColumn: daxLineCount
+
+	column 'Table Name'
+		dataType: string
+		isHidden
+		lineageTag: 204f01d4-75ee-4859-8cea-73944dffe9c6
+		sourceColumn: tableName
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: 4a57eb30-3055-45f6-8332-a7dd94835117
+		sourceColumn: semanticModelId
+
+	column 'Semantic Model Name'
+		dataType: string
+		isHidden
+		lineageTag: 0d88b175-43e6-42e0-8937-7ea143d88a9f
+		sourceColumn: semanticModelName
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 840e1df6-0585-4373-8a08-0412db867c9f
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: 61266b4d-8c3e-4c19-b40b-27c439331f1e
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: ffc356a9-9a4c-4f22-b14a-532801dde000
+		sourceColumn: scanRunId
+
+	partition Measure = entity
+		mode: directLake
+		source
+			entityName: pbi_measures
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

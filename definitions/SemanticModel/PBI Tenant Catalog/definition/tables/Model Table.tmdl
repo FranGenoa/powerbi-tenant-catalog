@@ -1,0 +1,128 @@
+/// One row per table inside a semantic model.
+table 'Model Table'
+	lineageTag: 30036026-6092-4e52-9f15-1fb019787f2e
+
+	/// Number of tables defined inside semantic models.
+	measure 'Model Tables' = COUNTROWS ( 'Model Table' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 69087b74-986b-4cbf-a6dd-673288dd8d40
+
+	/// Model tables hidden from report authors.
+	measure 'Hidden Tables' = CALCULATE ( [Model Tables], 'Model Table'[Is Hidden] = TRUE () )
+		formatString: #,##0
+		displayFolder: Design Quality
+		lineageTag: d39b9826-01d1-4d6b-8a8c-7e83bf3f8bda
+
+	/// Model tables that have no description filled in.
+	measure 'Undocumented Tables' = CALCULATE ( [Model Tables], ISBLANK ( 'Model Table'[Table Description] ) )
+		formatString: #,##0
+		displayFolder: Documentation
+		lineageTag: df388e5b-13da-405f-a209-0ad5e7eb672b
+
+	/// Share of model tables that carry a description.
+	measure 'Documented Tables %' = DIVIDE ( [Model Tables] - [Undocumented Tables], [Model Tables] )
+		formatString: 0.0%
+		displayFolder: Documentation
+		lineageTag: 37d4a75b-0bbe-4e49-813e-a6ea36c2c39f
+
+	column 'Model Table Key'
+		dataType: int64
+		isHidden
+		lineageTag: bff2dbe0-c0ce-4a8e-bf32-5874ae59e134
+		summarizeBy: none
+		sourceColumn: modelTableKey
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: 9ec5fdc0-cc2e-42cb-b648-fe61a9b466c8
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: dc761eb3-62b8-46e3-846f-ea8d26ddc8a8
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Name of the table inside the semantic model.
+	column 'Table Name'
+		dataType: string
+		lineageTag: bee2b9bb-250e-4c75-9e71-3b816e178f47
+		sourceColumn: tableName
+
+	column 'Table Description'
+		dataType: string
+		lineageTag: 0f42f858-aa28-433c-9dcd-38ca3eaa2d76
+		sourceColumn: description
+
+	/// True when the table is hidden from report authors.
+	column 'Is Hidden'
+		dataType: boolean
+		lineageTag: c0b13ef3-a25d-47e3-8660-3c968f2a7ad6
+		sourceColumn: isHidden
+
+	/// Storage mode of the table, e.g. Import, DirectQuery, Dual, DirectLake.
+	column 'Storage Mode'
+		dataType: string
+		lineageTag: 59864f92-ba6d-4b41-972f-32edb61aa9af
+		sourceColumn: storageMode
+
+	column 'Column Count'
+		dataType: int64
+		isHidden
+		lineageTag: a54bb851-30fb-4e4c-84f8-15b52cec01b0
+		summarizeBy: sum
+		sourceColumn: columnCount
+
+	column 'Measure Count'
+		dataType: int64
+		isHidden
+		lineageTag: 7ef0c378-5896-4c04-bf94-e6eed38de194
+		summarizeBy: sum
+		sourceColumn: measureCount
+
+	/// Power Query / source expression behind the table partitions.
+	column 'Source Expression'
+		dataType: string
+		lineageTag: 339b923e-4b8c-4718-8ec1-eb1da3c2f094
+		sourceColumn: sourceExpression
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: 9c573a2a-e938-45b0-9169-ce08954b387a
+		sourceColumn: semanticModelId
+
+	column 'Semantic Model Name'
+		dataType: string
+		isHidden
+		lineageTag: 60e5565b-ab21-4750-ac8a-d25193dcb223
+		sourceColumn: semanticModelName
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 66078d86-c97f-4775-8a90-05be211a4a17
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: a774db85-ed26-4375-bac9-09fcbd01f7c6
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 6d66dc4f-2582-4957-a469-31aa1e154086
+		sourceColumn: scanRunId
+
+	partition 'Model Table' = entity
+		mode: directLake
+		source
+			entityName: pbi_tables
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

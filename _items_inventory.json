@@ -1,0 +1,32 @@
+[
+  {
+    "type": "DataPipeline",
+    "displayName": "PBI Tenant Documentation Pipeline",
+    "id": "87dcce98-cc2d-4aa2-a19d-aac8366ba092"
+  },
+  {
+    "type": "Lakehouse",
+    "displayName": "PBICatalogLakehouse",
+    "id": "7d01b385-49fb-4874-9fca-ba9b47dfd240"
+  },
+  {
+    "type": "Notebook",
+    "displayName": "PBI Tenant Documentation",
+    "id": "2a0a3296-03d1-4ce4-b7b0-7075209a93fe"
+  },
+  {
+    "type": "Report",
+    "displayName": "PBI Tenant Catalog",
+    "id": "856a7417-9c1f-4666-9df2-80252f456f01"
+  },
+  {
+    "type": "SemanticModel",
+    "displayName": "PBI Tenant Catalog",
+    "id": "321d7ad0-eb2b-46a5-b696-b1ce3111d8c0"
+  },
+  {
+    "type": "SQLEndpoint",
+    "displayName": "PBICatalogLakehouse",
+    "id": "b18f79fa-8f60-48a5-8a24-5735d1beae3a"
+  }
+]

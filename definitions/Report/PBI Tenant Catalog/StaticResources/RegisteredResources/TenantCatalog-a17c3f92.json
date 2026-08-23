@@ -1,0 +1,124 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/powerbi-desktop-samples/main/Report%20Theme%20JSON%20Schema/reportThemeSchema-2.143.json",
+  "name": "TenantCatalog-a17c3f92.json",
+  "dataColors": [
+    "#0F4C81",
+    "#00A2AD",
+    "#F28F3A",
+    "#8C5FCF",
+    "#3EA76B",
+    "#D4576B",
+    "#5B7A9E",
+    "#B08A2E",
+    "#4CA1C4",
+    "#C25E9B",
+    "#7A8B99",
+    "#2F6E4E"
+  ],
+  "good": "#3EA76B",
+  "neutral": "#F0B429",
+  "bad": "#D4576B",
+  "maximum": "#0F4C81",
+  "center": "#9FC4DE",
+  "minimum": "#E8F1F8",
+  "null": "#F28F3A",
+  "foreground": "#1B2A3A",
+  "firstLevelElements": "#1B2A3A",
+  "secondLevelElements": "#5A6B7B",
+  "thirdLevelElements": "#E3E8EE",
+  "fourthLevelElements": "#8A98A6",
+  "background": "#FFFFFF",
+  "secondaryBackground": "#F2F5F8",
+  "tableAccent": "#0F4C81",
+  "textClasses": {
+    "callout": {
+      "fontSize": 28,
+      "fontFace": "Segoe UI Semibold",
+      "color": "#1B2A3A"
+    },
+    "title": {
+      "fontSize": 11,
+      "fontFace": "Segoe UI Semibold",
+      "color": "#1B2A3A"
+    },
+    "header": {
+      "fontSize": 10,
+      "fontFace": "Segoe UI Semibold",
+      "color": "#5A6B7B"
+    },
+    "label": {
+      "fontSize": 9,
+      "fontFace": "Segoe UI",
+      "color": "#1B2A3A"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "title": [
+          {
+            "show": true,
+            "fontFamily": "'Segoe UI Semibold'",
+            "fontSize": 11,
+            "fontColor": {
+              "solid": {
+                "color": "#1B2A3A"
+              }
+            },
+            "alignment": "left"
+          }
+        ],
+        "background": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#FFFFFF"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#E3E8EE"
+              }
+            },
+            "radius": 6,
+            "width": 1
+          }
+        ],
+        "padding": [
+          {
+            "top": 8,
+            "bottom": 8,
+            "left": 8,
+            "right": 8
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": false
+          }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#F4F6F9"
+              }
+            },
+            "transparency": 0
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+/// One row per Power Query parameter or shared expression defined in a semantic model.
+table 'Model Parameter'
+	lineageTag: 7455048a-2b28-4d52-bf1c-3a33467e6e3d
+
+	/// Number of Power Query parameters and shared expressions.
+	measure 'Model Parameters' = COUNTROWS ( 'Model Parameter' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: d05b851a-b2c1-4690-be8f-ff952e915170
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: d5e37f29-8a1a-4136-941c-9ea74eca24ac
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: daf4e3d4-69e0-45f0-9773-535aa5573a27
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Name of the Power Query parameter / named expression.
+	column 'Parameter Name'
+		dataType: string
+		lineageTag: 06e8d9c5-f9cf-4ec7-b44e-31055bd980f1
+		sourceColumn: name
+
+	column 'Parameter Description'
+		dataType: string
+		lineageTag: 40ba1821-3a20-4dbb-92d6-e53f3188f23e
+		sourceColumn: description
+
+	/// M expression behind the parameter or shared query.
+	column 'M Expression'
+		dataType: string
+		lineageTag: 59f78a2a-5af8-41a9-be90-b84decf11c69
+		sourceColumn: expression
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: e64f61b1-1d79-4d0e-84d2-bfff943233ea
+		sourceColumn: semanticModelId
+
+	column 'Semantic Model Name'
+		dataType: string
+		isHidden
+		lineageTag: 83d1ea8d-e695-43f5-9a60-3b8a5c7d0974
+		sourceColumn: semanticModelName
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 9c62518e-a14a-4afb-928e-f2ca334b63c8
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: 7d00cc13-0e67-439a-8d7a-a52403e5506a
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 1d713982-7813-4c6b-9c80-6553606e2615
+		sourceColumn: scanRunId
+
+	partition 'Model Parameter' = entity
+		mode: directLake
+		source
+			entityName: pbi_model_parameters
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

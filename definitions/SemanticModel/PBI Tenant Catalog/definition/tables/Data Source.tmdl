@@ -1,0 +1,88 @@
+/// One row per data source usage by a semantic model or dataflow.
+table 'Data Source'
+	lineageTag: 7f1383bf-ff35-49cb-b591-c97f27a6ba4f
+
+	/// Number of data source usages recorded against semantic models and dataflows.
+	measure 'Data Source Usages' = COUNTROWS ( 'Data Source' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: c3e012c1-8c07-430f-a82d-dc0f3171ced3
+
+	/// Distinct data source instances referenced across the tenant.
+	measure 'Distinct Data Sources' = DISTINCTCOUNT ( 'Data Source'[Data Source Instance Id] )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: fcb679a2-8911-41c2-bf1c-d5092b0ae1bf
+
+	/// Data source usages that route through an on-premises or VNet gateway.
+	measure 'Gateway Data Sources' = CALCULATE ( [Data Source Usages], NOT ISBLANK ( 'Data Source'[Gateway Id] ) )
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: e58bc356-28b8-4b32-8cf1-2fe3eb9930a0
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: f0bbc4c1-26e6-4d82-82ad-e2e387abd27d
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Type of artifact the data source is used by, e.g. SemanticModel or Dataflow.
+	column 'Artifact Type'
+		dataType: string
+		lineageTag: a2e7635c-e50b-4dd0-bcc0-4906cd2596e4
+		sourceColumn: artifactType
+
+	column 'Artifact Name'
+		dataType: string
+		lineageTag: 6d469eba-8b4c-49ac-a0cd-a6d7ff1d571f
+		sourceColumn: artifactName
+
+	column 'Artifact Id'
+		dataType: string
+		isHidden
+		lineageTag: db4fead8-ecdd-4a64-912c-2e26e106b373
+		sourceColumn: artifactId
+
+	column 'Data Source Instance Id'
+		dataType: string
+		isHidden
+		lineageTag: f098241a-c4aa-4168-a58b-79241c60e5ab
+		sourceColumn: datasourceInstanceId
+
+	column 'Gateway Id'
+		dataType: string
+		isHidden
+		lineageTag: a12dc4dd-0ea6-4f07-8b8c-e65abc0bc17a
+		sourceColumn: gatewayId
+
+	/// Raw JSON describing the data source usage.
+	column 'Data Source Details'
+		dataType: string
+		lineageTag: fe3780ba-0da5-4d51-90aa-ce3c0176a012
+		sourceColumn: details
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 881c1fee-b73a-4fc6-859a-9b15c7a54c36
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: bf91e15e-21ed-49ba-8853-aaafc64592ae
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 012ab919-78ad-4f38-a7c4-05aec0d2f820
+		sourceColumn: scanRunId
+
+	partition 'Data Source' = entity
+		mode: directLake
+		source
+			entityName: pbi_datasources
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

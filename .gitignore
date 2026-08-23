@@ -1,0 +1,29 @@
+# OS / OneDrive sync artifacts
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# Local credentials and environment
+*.env
+.env*
+*.pubxml
+*.publishsettings
+appsettings.local.json
+
+# Scan output and extracted data — regenerated in the Lakehouse, never committed
+*.pbix
+*.csv
+*.tsv
+*.parquet
+*.xlsx
+data_dictionary_*.md
+raw/
+
+# Logs and transcripts
+*.log
+transcript*.txt
+
+# Editor / tooling
+.vscode/
+.idea/
+*.swp

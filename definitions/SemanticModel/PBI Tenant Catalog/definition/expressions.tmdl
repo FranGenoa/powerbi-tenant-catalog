@@ -1,0 +1,8 @@
+/// OneLake Direct Lake source for the PBICatalogLakehouse in the PBI Catalog workspace.
+expression 'DirectLake - PBICatalogLakehouse' =
+		let
+		    Source = AzureStorage.DataLake("https://onelake.dfs.fabric.microsoft.com/1b1d98e1-4bab-4441-bd10-c262cc2d84f2/7d01b385-49fb-4874-9fca-ba9b47dfd240", [HierarchicalNavigation=true])
+		in
+		    Source
+	lineageTag: 2ed8fb8c-9caf-40bd-934c-11b6c50ffa8c
+

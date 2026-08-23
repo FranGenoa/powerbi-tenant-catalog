@@ -1,0 +1,4 @@
+/// Direct Lake catalog of the Power BI tenant: workspaces, semantic models, tables, columns, measures, reports, data sources and permissions.
+database
+	compatibilityLevel: 1606
+

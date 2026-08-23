@@ -1,0 +1,123 @@
+/// One row per Power BI / Fabric workspace discovered by the tenant scan.
+table Workspace
+	lineageTag: 06964a82-62d6-416a-b31b-db09d48c4a1a
+
+	/// Number of workspaces in the current filter context.
+	measure Workspaces = DISTINCTCOUNT ( 'Workspace'[Workspace Key] )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 9446e9d8-7a7c-4130-8535-4760d9e24b05
+
+	/// Workspaces that contain at least one report.
+	measure 'Workspaces with Reports' =
+			SUMX (
+			    VALUES ( 'Workspace'[Workspace Key] ),
+			    IF ( NOT ISBLANK ( CALCULATE ( COUNTROWS ( 'Report' ) ) ), 1, 0 )
+			)
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 57737708-e160-4d32-ae8c-0030dcdbe09a
+
+	/// Workspaces that contain no semantic models and no reports.
+	measure 'Empty Workspaces' =
+			SUMX (
+			    VALUES ( 'Workspace'[Workspace Key] ),
+			    IF (
+			        ISBLANK ( CALCULATE ( COUNTROWS ( 'Semantic Model' ) ) )
+			            && ISBLANK ( CALCULATE ( COUNTROWS ( 'Report' ) ) ),
+			        1,
+			        0
+			    )
+			)
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: c8143250-c874-48dc-b274-4dedc622d5b1
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: 3fba6411-c6d9-4145-8b3f-5220b0a66fe3
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 0010c893-510d-4106-8844-d5786a848831
+		sourceColumn: workspaceId
+
+	/// Display name of the Power BI / Fabric workspace.
+	column 'Workspace Name'
+		dataType: string
+		lineageTag: c4a1371c-ebaf-47ce-b856-54ce268e234e
+		sourceColumn: workspaceName
+
+	/// Workspace type, e.g. Workspace or PersonalGroup.
+	column 'Workspace Type'
+		dataType: string
+		lineageTag: 561fc1a8-3029-4dee-9abb-d646a03958b4
+		sourceColumn: type
+
+	/// Lifecycle state of the workspace.
+	column 'Workspace State'
+		dataType: string
+		lineageTag: 07f64ba0-97db-4784-ba7a-5534ed1032e9
+		sourceColumn: state
+
+	column 'Capacity Id'
+		dataType: string
+		isHidden
+		lineageTag: e004e2b9-558b-47e0-a701-545aeafc5fa5
+		sourceColumn: capacityId
+
+	/// Default storage format for new semantic models in the workspace.
+	column 'Default Storage Format'
+		dataType: string
+		lineageTag: b48c851b-d5bb-43f3-aceb-37e49e54161e
+		sourceColumn: defaultDatasetStorageFormat
+
+	column 'Workspace Description'
+		dataType: string
+		lineageTag: 4cde9cc6-22ce-418d-a4de-054e9ed27fc4
+		sourceColumn: description
+
+	column 'Report Count'
+		dataType: int64
+		isHidden
+		lineageTag: e9c1b41c-0c7c-4b5f-9a79-aa745cf45354
+		summarizeBy: sum
+		sourceColumn: reportCount
+
+	column 'Semantic Model Count'
+		dataType: int64
+		isHidden
+		lineageTag: de003426-346c-4480-a14b-ab151198525e
+		summarizeBy: sum
+		sourceColumn: semanticModelCount
+
+	column 'Dashboard Count'
+		dataType: int64
+		isHidden
+		lineageTag: 7858dca5-2bed-4fef-8dab-01d6c724982d
+		summarizeBy: sum
+		sourceColumn: dashboardCount
+
+	column 'Dataflow Count'
+		dataType: int64
+		isHidden
+		lineageTag: a8115cb6-79ce-4160-9488-9859a43efe0c
+		summarizeBy: sum
+		sourceColumn: dataflowCount
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: c9de10e7-69d0-4b95-bb24-078222daa0cb
+		sourceColumn: scanRunId
+
+	partition Workspace = entity
+		mode: directLake
+		source
+			entityName: pbi_workspaces
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

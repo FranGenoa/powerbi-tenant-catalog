@@ -1,0 +1,147 @@
+/// One row per data column across every semantic model table.
+table 'Model Column'
+	lineageTag: ec23caef-5ac0-4bb6-b076-52cd3d78be0b
+
+	/// Number of data columns across all semantic model tables.
+	measure Columns = COUNTROWS ( 'Model Column' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 21fc0bce-fc55-4102-9b7a-359273ad2e93
+
+	/// Data columns hidden from report authors.
+	measure 'Hidden Columns' = CALCULATE ( [Columns], 'Model Column'[Is Hidden] = TRUE () )
+		formatString: #,##0
+		displayFolder: Design Quality
+		lineageTag: e07959a8-a149-4481-82b2-9e69958e57dc
+
+	/// Share of data columns hidden from report authors.
+	measure 'Hidden Columns %' = DIVIDE ( [Hidden Columns], [Columns] )
+		formatString: 0.0%
+		displayFolder: Design Quality
+		lineageTag: accc7e83-5eac-4a3d-ba3c-0e4c46d5149f
+
+	/// Data columns that have no description filled in.
+	measure 'Undocumented Columns' = CALCULATE ( [Columns], ISBLANK ( 'Model Column'[Column Description] ) )
+		formatString: #,##0
+		displayFolder: Documentation
+		lineageTag: 72da4cc4-bfcf-4c0f-9808-a769f07e2b44
+
+	/// Share of data columns that carry a description.
+	measure 'Documented Columns %' = DIVIDE ( [Columns] - [Undocumented Columns], [Columns] )
+		formatString: 0.0%
+		displayFolder: Documentation
+		lineageTag: ccc71109-3d2a-41aa-a8e6-dccb64fa3493
+
+	/// Distinct tabular data types used across all model columns.
+	measure 'Distinct Data Types' = DISTINCTCOUNT ( 'Model Column'[Data Type] )
+		formatString: #,##0
+		displayFolder: Design Quality
+		lineageTag: ca67861b-b04a-4d72-a804-ddf7734f20d2
+
+	column 'Model Table Key'
+		dataType: int64
+		isHidden
+		lineageTag: 2234f4b6-a24a-4111-a7b5-4a895d6b0547
+		summarizeBy: none
+		sourceColumn: modelTableKey
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: ddef5130-ace4-4944-b58e-e8c80844dd48
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: 84f1c775-2337-4385-8e62-d2ed25bc77df
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Name of the column inside the model table.
+	column 'Column Name'
+		dataType: string
+		lineageTag: 4e50a8fa-820d-4572-81c5-64f2477ff5be
+		sourceColumn: columnName
+
+	/// Tabular data type, e.g. String, Int64, DateTime.
+	column 'Data Type'
+		dataType: string
+		lineageTag: 6fb4b7d7-0caf-4a4e-af3a-7c2e46514600
+		sourceColumn: dataType
+
+	/// Column type, e.g. Data or Calculated.
+	column 'Column Type'
+		dataType: string
+		lineageTag: 6c35cecb-816e-4af2-b035-4c21d6daabed
+		sourceColumn: columnType
+
+	column 'Is Hidden'
+		dataType: boolean
+		lineageTag: eb1b5386-c132-48d3-ad38-711e2efc4742
+		sourceColumn: isHidden
+
+	column 'Column Description'
+		dataType: string
+		lineageTag: f94c1805-77d3-41a7-9f76-d61540f26eac
+		sourceColumn: description
+
+	column 'Display Folder'
+		dataType: string
+		lineageTag: b0436782-8ca2-418a-80b2-17068a2e5355
+		sourceColumn: displayFolder
+
+	column 'Format String'
+		dataType: string
+		lineageTag: 99366bd1-78c4-4e81-b844-3f7d5660d1b0
+		sourceColumn: formatString
+
+	column Expression
+		dataType: string
+		isHidden
+		lineageTag: c3f02908-f3f5-468f-bd55-7935cfe58185
+		sourceColumn: expression
+
+	column 'Table Name'
+		dataType: string
+		isHidden
+		lineageTag: 1f2bd96e-c2b8-49d9-802c-792ee1bdfb2c
+		sourceColumn: tableName
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: 985ab6e5-e222-4fda-ab69-f550eb00bb12
+		sourceColumn: semanticModelId
+
+	column 'Semantic Model Name'
+		dataType: string
+		isHidden
+		lineageTag: e7c38731-45c3-42e2-b1e8-ed14c76d9642
+		sourceColumn: semanticModelName
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: fe3ba665-6145-4893-ab2e-922b7d75e2a6
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: 67b875d7-5348-4916-9392-5e44f59c6df4
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 3204ee8c-bd32-4ea1-bf80-79fbba443b3f
+		sourceColumn: scanRunId
+
+	partition 'Model Column' = entity
+		mode: directLake
+		source
+			entityName: pbi_columns
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

@@ -1,0 +1,120 @@
+/// One row per DAX calculated column across every semantic model table.
+table 'Calculated Column'
+	lineageTag: 304a5a39-1393-4b1b-a98e-ab450ee791e1
+
+	/// Number of DAX calculated columns across all semantic model tables.
+	measure 'Calculated Columns' = COUNTROWS ( 'Calculated Column' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 879396cc-352f-4e3d-beb7-c1e42a857f29
+
+	/// Average number of calculated columns per semantic model - high values suggest logic that belongs upstream.
+	measure 'Calculated Columns per Model' = DIVIDE ( [Calculated Columns], [Semantic Models] )
+		formatString: #,##0.0
+		displayFolder: Complexity
+		lineageTag: af59608b-d0c7-4e36-8297-51e8a284d4be
+
+	column 'Model Table Key'
+		dataType: int64
+		isHidden
+		lineageTag: 02e99f4a-7c39-4a2a-bd79-bd22bfad8e4f
+		summarizeBy: none
+		sourceColumn: modelTableKey
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: 44dafb50-b6d4-4131-896f-af3cbbe3eb59
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: bbc7c65f-0091-4348-8cc3-f0a656e6e883
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	column 'Column Name'
+		dataType: string
+		lineageTag: ebe7c45b-85ed-48b5-8aa1-f92ab21a13aa
+		sourceColumn: columnName
+
+	column 'Data Type'
+		dataType: string
+		lineageTag: 2babe237-d44e-4b44-b173-7bf016ac8905
+		sourceColumn: dataType
+
+	column 'Column Type'
+		dataType: string
+		lineageTag: a6ec3413-ba15-4074-8343-8575d76bee42
+		sourceColumn: columnType
+
+	column 'Is Hidden'
+		dataType: boolean
+		lineageTag: bfa867da-e4b5-44be-9bd2-9dd3d197f3ea
+		sourceColumn: isHidden
+
+	column 'Column Description'
+		dataType: string
+		lineageTag: dda95de1-801f-4baa-b973-4ba1313307c3
+		sourceColumn: description
+
+	column 'Display Folder'
+		dataType: string
+		lineageTag: 23b5f383-a6cb-49e0-8013-fec76110a62d
+		sourceColumn: displayFolder
+
+	column 'Format String'
+		dataType: string
+		lineageTag: 3c57c0c7-f5ca-47a7-8586-7673f93d11e1
+		sourceColumn: formatString
+
+	/// DAX expression behind the calculated column.
+	column 'DAX Expression'
+		dataType: string
+		lineageTag: 58b16f86-d869-4de6-8af2-618793ccc096
+		sourceColumn: expression
+
+	column 'Table Name'
+		dataType: string
+		isHidden
+		lineageTag: 26ee0578-d275-4ed1-a129-8e1ead5af4b6
+		sourceColumn: tableName
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: 7f3a87d8-9a16-4caa-9183-699aa2c7c7e4
+		sourceColumn: semanticModelId
+
+	column 'Semantic Model Name'
+		dataType: string
+		isHidden
+		lineageTag: 52dcde7a-fe0a-4ce7-a3e4-c59deecd259a
+		sourceColumn: semanticModelName
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: fc693c2d-9936-4e64-8c7f-03beb625f364
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: e38bc36c-0873-4afa-8e91-e41b6cccf1ca
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 7aef4239-0ae9-43a7-908f-2de73d0e7d4d
+		sourceColumn: scanRunId
+
+	partition 'Calculated Column' = entity
+		mode: directLake
+		source
+			entityName: pbi_calculated_columns
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

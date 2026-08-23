@@ -1,0 +1,105 @@
+/// One row per access grant on a workspace or report.
+table Permission
+	lineageTag: 38a513ca-2e30-4d78-950e-5e4d5b80124d
+
+	/// Number of access grants recorded on workspaces and reports.
+	measure 'Access Grants' = COUNTROWS ( 'Permission' )
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: 92cb9fc0-bc10-4bf5-9125-8bcc76d59048
+
+	/// Distinct users, groups and service principals with access.
+	measure 'Distinct Principals' = DISTINCTCOUNT ( 'Permission'[Principal] )
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: c4d4081d-5a6b-4075-8ab6-2473b299c820
+
+	/// Workspace-level Admin grants.
+	measure 'Workspace Admins' =
+			CALCULATE (
+			    [Access Grants],
+			    'Permission'[Role] = "Admin",
+			    'Permission'[Artifact Type] = "Workspace"
+			)
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: 875ebb4f-c829-4382-ba49-b570a4140430
+
+	/// Access grants held by service principals rather than users or groups.
+	measure 'Service Principal Grants' = CALCULATE ( [Access Grants], 'Permission'[Principal Type] = "App" )
+		formatString: #,##0
+		displayFolder: Governance
+		lineageTag: fb2067b2-c427-4370-a687-2557103bd0e6
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: 51019d30-74e2-472f-bc6b-538a37c179f2
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Type of artifact the permission is granted on, e.g. Workspace or Report.
+	column 'Artifact Type'
+		dataType: string
+		lineageTag: 96922323-f666-46c3-8fc8-3ae45ba7fa4c
+		sourceColumn: artifactType
+
+	column 'Artifact Name'
+		dataType: string
+		lineageTag: c15ad551-ae5a-4a3a-9b21-b45fb357a079
+		sourceColumn: artifactName
+
+	column 'Artifact Id'
+		dataType: string
+		isHidden
+		lineageTag: cb4aed98-4d0f-4110-93eb-d68e81057ad6
+		sourceColumn: artifactId
+
+	/// User, group or service principal the access right is granted to.
+	column Principal
+		dataType: string
+		lineageTag: 40138964-4e74-489e-b2a3-ca016d8d2c39
+		sourceColumn: principal
+
+	/// User, Group, App or None.
+	column 'Principal Type'
+		dataType: string
+		lineageTag: 125f7238-53fb-4a6d-a114-67bd9547f10d
+		sourceColumn: principalType
+
+	column Identifier
+		dataType: string
+		isHidden
+		lineageTag: ac725d58-25c1-4820-925b-60d515225f28
+		sourceColumn: identifier
+
+	/// Access right granted, e.g. Admin, Member, Contributor, Viewer, Read.
+	column Role
+		dataType: string
+		lineageTag: 779bec88-3712-4ce5-a471-2a91b3dcf04c
+		sourceColumn: role
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 5695d83a-d082-4d00-8c5d-85e8cce24499
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: 6be241fd-eab9-468e-85d4-bc190fc53e51
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 7c8dfe0b-ed1a-4816-bc29-f1435383ad5d
+		sourceColumn: scanRunId
+
+	partition Permission = entity
+		mode: directLake
+		source
+			entityName: pbi_permissions
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

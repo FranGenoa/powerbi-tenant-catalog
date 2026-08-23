@@ -1,0 +1,40 @@
+relationship 'Workspace to Semantic Model'
+	fromColumn: 'Semantic Model'.'Workspace Key'
+	toColumn: Workspace.'Workspace Key'
+
+relationship 'Workspace to Permission'
+	fromColumn: Permission.'Workspace Key'
+	toColumn: Workspace.'Workspace Key'
+
+relationship 'Workspace to Data Source'
+	fromColumn: 'Data Source'.'Workspace Key'
+	toColumn: Workspace.'Workspace Key'
+
+relationship 'Semantic Model to Model Table'
+	fromColumn: 'Model Table'.'Semantic Model Key'
+	toColumn: 'Semantic Model'.'Semantic Model Key'
+
+relationship 'Semantic Model to Report'
+	fromColumn: Report.'Semantic Model Key'
+	toColumn: 'Semantic Model'.'Semantic Model Key'
+
+relationship 'Semantic Model to Model Parameter'
+	fromColumn: 'Model Parameter'.'Semantic Model Key'
+	toColumn: 'Semantic Model'.'Semantic Model Key'
+
+relationship 'Model Table to Measure'
+	fromColumn: Measure.'Model Table Key'
+	toColumn: 'Model Table'.'Model Table Key'
+
+relationship 'Model Table to Model Column'
+	fromColumn: 'Model Column'.'Model Table Key'
+	toColumn: 'Model Table'.'Model Table Key'
+
+relationship 'Model Table to Calculated Column'
+	fromColumn: 'Calculated Column'.'Model Table Key'
+	toColumn: 'Model Table'.'Model Table Key'
+
+relationship 'Date to Report Modified'
+	fromColumn: Report.'Modified Date Key'
+	toColumn: Date.'Date Key'
+

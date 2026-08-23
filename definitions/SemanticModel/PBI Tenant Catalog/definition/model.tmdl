@@ -1,0 +1,22 @@
+model 'PBI Tenant Catalog'
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_ProTooling = ["MCP-PBIModeling","DirectLakeOnOneLakeInWeb","WebModelingEdit","DaxQueryView_Desktop","DaxCopilot_Change_Accepted_In_Desktop"]
+
+ref table Workspace
+ref table 'Semantic Model'
+ref table 'Model Table'
+ref table Date
+ref table Report
+ref table Measure
+ref table 'Model Column'
+ref table 'Calculated Column'
+ref table 'Data Source'
+ref table Permission
+ref table 'Model Parameter'
+

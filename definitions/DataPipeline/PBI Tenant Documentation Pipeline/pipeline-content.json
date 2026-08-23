@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "Scan and document Power BI tenant",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "2a0a3296-03d1-4ce4-b7b0-7075209a93fe",
+          "workspaceId": "1b1d98e1-4bab-4441-bd10-c262cc2d84f2",
+          "parameters": {}
+        }
+      }
+    ],
+    "annotations": []
+  }
+}

@@ -1,0 +1,87 @@
+/// Contiguous date dimension used for time intelligence over report and model activity.
+table Date
+	lineageTag: e4aa5b75-faaf-404c-a876-c7c41cf5c530
+	dataCategory: Time
+
+	column 'Date Key'
+		dataType: int64
+		isHidden
+		lineageTag: 69649639-8ab7-432e-b8a9-29b3abc0577e
+		summarizeBy: none
+		sourceColumn: dateKey
+
+	column Date
+		dataType: dateTime
+		isUnique
+		formatString: yyyy-mm-dd
+		lineageTag: cef44302-6c56-4e4f-aebf-54ce353e8c63
+		summarizeBy: none
+		sourceColumn: date
+
+	column Year
+		dataType: int64
+		lineageTag: 00b97b7a-1fe3-4356-a66e-37029ae92817
+		summarizeBy: none
+		sourceColumn: year
+
+	column 'Quarter Number'
+		dataType: int64
+		isHidden
+		lineageTag: 9aeccdfe-1d07-426d-8e32-a05f08a75e5e
+		summarizeBy: none
+		sourceColumn: quarterNumber
+
+	column Quarter
+		dataType: string
+		lineageTag: a1d25d88-92b3-4e0e-bc54-cc5486668577
+		summarizeBy: none
+		sourceColumn: quarter
+		sortByColumn: 'Quarter Number'
+
+	column 'Month Number'
+		dataType: int64
+		isHidden
+		lineageTag: 47f5a1a0-c14b-435a-a447-daadad787ffe
+		summarizeBy: none
+		sourceColumn: monthNumber
+
+	column 'Month Name'
+		dataType: string
+		lineageTag: ec794c8e-e7d4-470b-98ed-b569f487d53e
+		summarizeBy: none
+		sourceColumn: monthName
+		sortByColumn: 'Month Number'
+
+	/// Year and month in YYYY-MM form.
+	column 'Year Month'
+		dataType: string
+		lineageTag: 737f2505-4d22-425c-9679-5505e749285a
+		summarizeBy: none
+		sourceColumn: yearMonth
+
+	column 'Day Of Month'
+		dataType: int64
+		lineageTag: 7da53127-3836-4160-8641-11f3f5931162
+		summarizeBy: none
+		sourceColumn: dayOfMonth
+
+	column 'Day Of Week Number'
+		dataType: int64
+		isHidden
+		lineageTag: 47eed001-be18-4a65-a69d-5c40792b597b
+		summarizeBy: none
+		sourceColumn: dayOfWeekNumber
+
+	column 'Day Name'
+		dataType: string
+		lineageTag: ff4eda2c-3685-4a76-9ceb-ded010d4b75f
+		summarizeBy: none
+		sourceColumn: dayName
+		sortByColumn: 'Day Of Week Number'
+
+	partition Date = entity
+		mode: directLake
+		source
+			entityName: pbi_date
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+
