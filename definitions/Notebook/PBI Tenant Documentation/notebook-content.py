@@ -392,6 +392,81 @@ ROWS: dict = {k: [] for k in (
     "datasources", "dashboards", "tiles", "dataflows", "other_items", "permissions",
 )}
 
+_MODEL_OBJECT = ["workspaceId", "workspaceName", "semanticModelId", "semanticModelName"]
+_COLUMN_COLS = _MODEL_OBJECT + [
+    "tableName", "columnName", "dataType", "columnType", "isHidden", "description",
+    "displayFolder", "formatString", "expression", "scanRunId",
+]
+
+# The scanner omits table/column/measure detail unless the caller is in the security group
+# allowed by the AdminApisIncludeDetailedMetadata tenant setting, so these entities are
+# routinely empty. Direct Lake binds to fixed table names, so every entity must still be
+# written with its full schema or the semantic model fails to refresh entirely.
+ENTITY_COLUMNS: dict = {
+    "workspaces": [
+        "workspaceId", "workspaceName", "type", "state", "capacityId",
+        "defaultDatasetStorageFormat", "description", "reportCount",
+        "semanticModelCount", "dashboardCount", "dataflowCount", "scanRunId",
+    ],
+    "reports": [
+        "workspaceId", "workspaceName", "reportId", "reportName", "reportType",
+        "semanticModelId", "description", "createdDateTime", "modifiedDateTime",
+        "modifiedBy", "createdBy", "endorsement", "certifiedBy", "sensitivityLabelId",
+        "appId", "originalReportObjectId", "webUrl", "scanRunId",
+    ],
+    "semantic_models": _MODEL_OBJECT + [
+        "description", "configuredBy", "createdDate", "contentProviderType",
+        "targetStorageMode", "endorsement", "certifiedBy", "sensitivityLabelId",
+        "tableCount", "columnCount", "measureCount", "upstreamDataflows",
+        "upstreamDatasets", "upstreamDatamarts", "webUrl", "scanRunId",
+    ],
+    "tables": _MODEL_OBJECT + [
+        "tableName", "description", "isHidden", "storageMode", "columnCount",
+        "measureCount", "sourceExpression", "scanRunId",
+    ],
+    "columns": _COLUMN_COLS,
+    "calculated_columns": _COLUMN_COLS,
+    "measures": _MODEL_OBJECT + [
+        "tableName", "measureName", "daxExpression", "description", "isHidden",
+        "displayFolder", "formatString", "scanRunId",
+    ],
+    "relationships": _MODEL_OBJECT + [
+        "relationship", "fromTable", "fromColumn", "toTable", "toColumn", "isActive",
+        "cardinality", "crossFilterBehavior", "securityFilterBehavior", "scanRunId",
+    ],
+    "rls_roles": _MODEL_OBJECT + [
+        "roleName", "modelPermission", "tableName", "filterExpression", "members",
+        "scanRunId",
+    ],
+    "model_parameters": _MODEL_OBJECT + [
+        "name", "description", "expression", "scanRunId",
+    ],
+    "datasources": [
+        "workspaceId", "workspaceName", "artifactType", "artifactId", "artifactName",
+        "datasourceInstanceId", "gatewayId", "details", "scanRunId",
+    ],
+    "dashboards": [
+        "workspaceId", "workspaceName", "dashboardId", "dashboardName", "isReadOnly",
+        "appId", "sensitivityLabelId", "scanRunId",
+    ],
+    "tiles": [
+        "workspaceId", "workspaceName", "dashboardId", "tileId", "title", "reportId",
+        "semanticModelId", "scanRunId",
+    ],
+    "dataflows": [
+        "workspaceId", "workspaceName", "dataflowId", "dataflowName", "description",
+        "configuredBy", "modifiedDateTime", "generation", "scanRunId",
+    ],
+    "other_items": [
+        "workspaceId", "workspaceName", "itemKind", "itemId", "itemName", "description",
+        "configuredBy", "modifiedDateTime", "scanRunId",
+    ],
+    "permissions": [
+        "workspaceId", "workspaceName", "artifactType", "artifactId", "artifactName",
+        "principal", "principalType", "identifier", "role", "scanRunId",
+    ],
+}
+
 
 def add(bucket: str, row: dict) -> None:
     row.setdefault("scanRunId", CURRENT_RUN)
@@ -615,7 +690,25 @@ for path in raw_files:
         flatten_workspace(ws)
     print("  {} -> cumulative measures: {:,}".format(os.path.basename(path), len(ROWS["measures"])))
 
-DFS = {name: pd.DataFrame(rows) for name, rows in ROWS.items() if rows}
+def build_frame(name: str, rows: list) -> pd.DataFrame:
+    expected = ENTITY_COLUMNS.get(name, [])
+    frame = pd.DataFrame(rows) if rows else pd.DataFrame(columns=expected)
+    for col in expected:
+        if col not in frame.columns:
+            frame[col] = None
+    return frame
+
+
+DFS = {name: build_frame(name, rows) for name, rows in ROWS.items()}
+
+empty = sorted(name for name, frame in DFS.items() if frame.empty)
+if empty:
+    print("WARNING: no rows returned for: {}".format(", ".join(empty)))
+    print("         Empty tables are still written so the semantic model stays valid.")
+    if {"tables", "columns", "measures"} & set(empty):
+        print("         Model detail is missing. Confirm the identity running this notebook is")
+        print("         in the security group allowed by the tenant settings 'Enhance admin API")
+        print("         responses with detailed metadata' and '...with DAX and mashup expressions'.")
 
 summary = (pd.DataFrame([{"entity": k, "rows": len(v)} for k, v in DFS.items()])
              .sort_values("rows", ascending=False).reset_index(drop=True))

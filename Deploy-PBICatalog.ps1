@@ -202,7 +202,8 @@ function Get-ItemParts {
             Extension = $file.Extension.ToLowerInvariant()
         }
     }
-    return $parts
+    # Comma operator: a single-part item must stay an array, not collapse to a scalar.
+    return ,$parts
 }
 
 function ConvertTo-FabDefinitionParts {
@@ -247,7 +248,8 @@ function ConvertTo-FabDefinitionParts {
             payloadType = 'InlineBase64'
         }
     }
-    return $encoded
+    # Comma operator: Fabric rejects 'parts' unless it serialises as a JSON array.
+    return ,$encoded
 }
 
 function Get-ReportFormat {
@@ -324,8 +326,11 @@ function New-FabItem {
     $body = @{ displayName = $DisplayName; type = $Type }
     if ($Description) { $body.description = $Description }
 
-    if ($DefinitionParts -and $DefinitionParts.Count -gt 0) {
-        $definition = @{ parts = $DefinitionParts }
+    # @($null) is a one-element array holding null, so nulls must be filtered out or a
+    # definition-less item (Lakehouse) posts parts:[null] and the API rejects it.
+    $parts = @($DefinitionParts | Where-Object { $null -ne $_ })
+    if ($parts.Count -gt 0) {
+        $definition = @{ parts = $parts }
         if ($Format) { $definition.format = $Format }
         $body.definition = $definition
     }

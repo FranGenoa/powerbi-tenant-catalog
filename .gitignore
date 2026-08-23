@@ -27,3 +27,7 @@ transcript*.txt
 .vscode/
 .idea/
 *.swp
+
+# Python bytecode from local syntax checks
+__pycache__/
+*.pyc
