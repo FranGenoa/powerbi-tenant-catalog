@@ -3,8 +3,8 @@
 A deployable Microsoft Fabric solution that scans a Power BI / Fabric tenant and turns it
 into a **queryable data dictionary** — workspaces, reports, semantic models, tables,
 columns, DAX measures (with expressions), calculated columns, relationships, RLS roles,
-M/Power Query expressions, data sources and lineage — surfaced through a Direct Lake
-semantic model and a six-page report.
+M/Power Query expressions **parsed down to individual applied steps**, data sources and
+lineage — surfaced through a Direct Lake semantic model and a seven-page report.
 
 Deploy it into any tenant with one command.
 
@@ -16,7 +16,7 @@ graph LR
   B --> C[Files/pbi_documentation/raw<br/>bronze, verbatim JSON]
   C --> D[pbi_* Delta tables<br/>silver, flattened]
   D --> E[Semantic Model<br/>Direct Lake]
-  E --> F[Report<br/>6 pages]
+  E --> F[Report<br/>7 pages]
   G[Data Pipeline] -.orchestrates.-> B
 ```
 
@@ -196,14 +196,55 @@ verifies those tables landed before publishing the model and report.
 | `pbi_model_parameters` | Model Parameter |
 | `pbi_datasources` | Data Source |
 | `pbi_permissions` | Permission |
+| `pbi_power_query` | Power Query |
+| `pbi_power_query_steps` | Power Query Step |
+| `pbi_model_upstream` | Model Upstream |
+| `pbi_dataflow_relations` | Dataflow Relation |
 | `pbi_date` | Date |
 
 Plus `Files/pbi_documentation/data_dictionary_<run_id>.md` and the raw JSON under
 `Files/pbi_documentation/raw/<run_id>/`.
 
+### Power Query analysis
+
+`pbi_power_query` holds **one row per M query** — the verbatim expression plus a
+classified connector, a native-query flag and a step count. `pbi_power_query_steps`
+explodes the same query into **one row per applied step**, mirroring the Applied Steps
+list in the Power Query editor, so transformation logic is sliceable rather than trapped
+in a text blob.
+
+Each query is assigned a `sourceCategory`:
+
+| Category | Meaning |
+|---|---|
+| Named connector | `SQL Server`, `Dataflow`, `Azure Data Lake`, `Azure Data Explorer`, `Excel`, `SharePoint`, … |
+| `Calculated Table` | DAX, not M — the scanner returns calculated tables in the same field |
+| `Custom Function` | Invokes a user-defined function or another query in the model |
+| `Entity Reference` | A bare entity name, i.e. a Direct Lake or DirectQuery table |
+| `Query Reference` | A bare reference to another query in the same model |
+| `Parameter` | Carries `IsParameterQuery=true` metadata |
+| `Inline` | Constructed in M (`#table`, `Table.FromRows`, `#datetime`, …) |
+| `Other` / `Unknown` | No recognisable source function |
+
+Against a real 33-model tenant this classifies ~89% of queries; the residue is usually a
+query whose first call is a parameter-normalisation guard rather than the connector.
+
+> The step splitter is a **pragmatic tokenizer, not a conforming M parser**. It is
+> comment- and string-literal-aware and tracks bracket plus nested `let`/`in` depth, but a
+> step whose body contains its own `let` block is kept as a single row rather than
+> recursed into.
+
+`pbi_model_upstream` and `pbi_dataflow_relations` record dataflow, dataset and datamart
+lineage. Both are legitimately **empty in tenants that use no dataflows** — that is not a
+scan failure.
+
 ### Report pages
 
-Tenant Overview · Model Explorer · Measure Catalog · Data Dictionary · Governance & Access · Report Activity
+Tenant Overview · Model Explorer · Measure Catalog · Data Dictionary · Governance & Access · Report Activity · Power Query & Lineage
+
+**Power Query & Lineage** slices queries by workspace, model, connector and query kind,
+then drills from a query to its applied steps and finally to the complete unparsed M,
+rendered verbatim in a monospace panel.
 
 ## Rebinding
 
@@ -221,7 +262,7 @@ Source identifiers are discovered at runtime, not hard-coded, so the script keep
 if you re-export a modified solution.
 
 > The workspace **name** is replaced only inside `definition.pbir`. A global replace would
-> corrupt visual titles and text boxes across the report's ~110 parts. GUIDs are replaced
+> corrupt visual titles and text boxes across the report's ~130 parts. GUIDs are replaced
 > globally; the display name is not.
 
 
@@ -241,7 +282,7 @@ $h   = @{ Authorization = "Bearer $tok" }
 ```
 
 `We cannot access the source Delta table pbi_<x>` names the missing table directly.
-Compare the lakehouse against the eleven tables listed under [Output](#delta-tables).
+Compare the lakehouse against the fifteen tables listed under [Output](#delta-tables).
 
 **Workspaces, reports and permissions have data, but Model Table / Model Column / Measure
 are empty.** The Scanner API returned `tables: []` for every dataset. This is the
@@ -254,6 +295,14 @@ Files/pbi_documentation/raw/<run_id>/scan_0001.json
 ```
 
 If `datasets[].tables` is empty there, the problem is upstream of this solution.
+
+**Measures and Power Query are empty, but tables and columns are populated.** Subartifact
+detail passes **two** gates, not one. The tenant setting above is the first. The second is
+that DAX and M expressions are materialised into the scan payload only for models that
+have been **refreshed or republished** since the setting was turned on — the Scanner API
+reads a cached metadata blob, it does not open the model live. A tenant of long-dormant
+models will return tables and columns but no expressions. Refresh one model and re-run the
+pipeline to confirm before investigating anything else.
 
 **Items export as `NotSupported`.** If the capacity is paused, `getDefinition` returns
 400/404 and the export script misreports it as `NotSupported`. Resume the capacity and

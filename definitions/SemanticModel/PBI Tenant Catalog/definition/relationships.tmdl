@@ -38,3 +38,19 @@ relationship 'Date to Report Modified'
 	fromColumn: Report.'Modified Date Key'
 	toColumn: Date.'Date Key'
 
+relationship 'Model Table to Power Query'
+	fromColumn: 'Power Query'.'Model Table Key'
+	toColumn: 'Model Table'.'Model Table Key'
+
+relationship 'Power Query to Power Query Step'
+	fromColumn: 'Power Query Step'.'Power Query Key'
+	toColumn: 'Power Query'.'Power Query Key'
+
+relationship 'Semantic Model to Model Upstream'
+	fromColumn: 'Model Upstream'.'Semantic Model Key'
+	toColumn: 'Semantic Model'.'Semantic Model Key'
+
+relationship 'Workspace to Dataflow Relation'
+	fromColumn: 'Dataflow Relation'.'Workspace Key'
+	toColumn: Workspace.'Workspace Key'
+

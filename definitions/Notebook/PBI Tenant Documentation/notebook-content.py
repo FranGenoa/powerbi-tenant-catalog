@@ -390,6 +390,7 @@ ROWS: dict = {k: [] for k in (
     "workspaces", "reports", "semantic_models", "tables", "columns", "measures",
     "calculated_columns", "relationships", "rls_roles", "model_parameters",
     "datasources", "dashboards", "tiles", "dataflows", "other_items", "permissions",
+    "power_query", "power_query_steps", "model_upstream", "dataflow_relations",
 )}
 
 _MODEL_OBJECT = ["workspaceId", "workspaceName", "semanticModelId", "semanticModelName"]
@@ -465,12 +466,394 @@ ENTITY_COLUMNS: dict = {
         "workspaceId", "workspaceName", "artifactType", "artifactId", "artifactName",
         "principal", "principalType", "identifier", "role", "scanRunId",
     ],
+    "power_query": _MODEL_OBJECT + [
+        "tableName", "queryName", "queryKind", "expression", "sourceFunction",
+        "sourceCategory", "sourceDetail", "hasNativeQuery", "referencesQueries",
+        "stepCount", "lineCount", "charCount", "scanRunId",
+    ],
+    "power_query_steps": _MODEL_OBJECT + [
+        "tableName", "queryName", "stepOrder", "stepName", "stepFunction",
+        "stepCategory", "stepExpression", "scanRunId",
+    ],
+    "model_upstream": _MODEL_OBJECT + [
+        "upstreamKind", "upstreamId", "upstreamWorkspaceId", "scanRunId",
+    ],
+    "dataflow_relations": [
+        "workspaceId", "workspaceName", "dataflowId", "dataflowName",
+        "dependentOnArtifactId", "dependentOnWorkspaceId", "relationType", "usage",
+        "scanRunId",
+    ],
 }
 
 
 def add(bucket: str, row: dict) -> None:
     row.setdefault("scanRunId", CURRENT_RUN)
     ROWS[bucket].append(row)
+
+
+# ---------------------------------------------------------------------------
+# Power Query (M) parsing
+# ---------------------------------------------------------------------------
+# This is a pragmatic splitter, not a conforming M parser: it tokenises well enough
+# to respect strings, comments and bracket nesting, which covers the shapes the
+# scanner returns. A step whose body contains its own `let` block stays one row.
+
+_M_SOURCE_CATEGORY = {
+    "powerplatform.dataflows": "Dataflow",
+    "powerbi.dataflows": "Dataflow",
+    "dataflows.contents": "Dataflow",
+    "powerbi.datasets": "Semantic Model",
+    "analysisservices.database": "Analysis Services",
+    "analysisservices.databases": "Analysis Services",
+    "sql.database": "SQL Server",
+    "sql.databases": "SQL Server",
+    "lakehouse.contents": "Fabric Lakehouse",
+    "fabric.warehouse": "Fabric Warehouse",
+    "datalake.contents": "Azure Data Lake",
+    "azurestorage.datalake": "Azure Data Lake",
+    "azurestorage.blobs": "Azure Blob",
+    "azurestorage.tables": "Azure Table",
+    "synapse.database": "Synapse",
+    "kusto.contents": "Kusto",
+    "kusto.databases": "Kusto",
+    "databricks.catalogs": "Databricks",
+    "databricks.contents": "Databricks",
+    "snowflake.databases": "Snowflake",
+    "amazonredshift.database": "Redshift",
+    "googlebigquery.database": "BigQuery",
+    "oracle.database": "Oracle",
+    "postgresql.database": "PostgreSQL",
+    "mysql.database": "MySQL",
+    "teradata.database": "Teradata",
+    "db2.database": "DB2",
+    "saphana.database": "SAP HANA",
+    "sapbusinessobjects.universes": "SAP BusinessObjects",
+    "sapbw.cubes": "SAP BW",
+    "essbase.cubes": "Essbase",
+    "odbc.datasource": "ODBC",
+    "odbc.query": "ODBC",
+    "oledb.datasource": "OLE DB",
+    "odata.feed": "OData",
+    "web.contents": "Web",
+    "web.browsercontents": "Web",
+    "json.document": "File",
+    "csv.document": "File",
+    "xml.tables": "File",
+    "excel.workbook": "Excel",
+    "excel.currentworkbook": "Excel",
+    "file.contents": "File",
+    "folder.files": "Folder",
+    "folder.contents": "Folder",
+    "sharepoint.files": "SharePoint",
+    "sharepoint.tables": "SharePoint",
+    "sharepoint.contents": "SharePoint",
+    "salesforce.data": "Salesforce",
+    "salesforce.reports": "Salesforce",
+    "dynamics365.data": "Dynamics 365",
+    "commondata.database": "Dataverse",
+    "table.fromrows": "Inline",
+    "table.fromrecords": "Inline",
+    "table.fromvalue": "Inline",
+    "table.fromlist": "Inline",
+    "table.fromcolumns": "Inline",
+    "table.frompartitions": "Inline",
+    "json.document": "Inline",
+    "csv.document": "Inline",
+    "azuredataexplorer.contents": "Azure Data Explorer",
+    "azuredataexplorer.databases": "Azure Data Explorer",
+    # M sharp-literal constructors: #table(...), #datetime(...), #date(...).
+    "table": "Inline",
+    "date": "Inline",
+    "time": "Inline",
+    "datetime": "Inline",
+    "datetimezone": "Inline",
+    "duration": "Inline",
+    "binary": "Inline",
+}
+
+_M_STEP_CATEGORY = {
+    "table.selectrows": "Filter",
+    "table.addcolumn": "AddColumn",
+    "table.addindexcolumn": "AddColumn",
+    "table.duplicatecolumn": "AddColumn",
+    "table.transformcolumntypes": "ChangeType",
+    "table.renamecolumns": "Rename",
+    "table.removecolumns": "RemoveColumns",
+    "table.selectcolumns": "SelectColumns",
+    "table.reordercolumns": "Reorder",
+    "table.nestedjoin": "Join",
+    "table.join": "Join",
+    "table.fuzzynestedjoin": "Join",
+    "table.combine": "Append",
+    "table.group": "Group",
+    "table.pivot": "Pivot",
+    "table.unpivot": "Unpivot",
+    "table.unpivotothercolumns": "Unpivot",
+    "table.sort": "Sort",
+    "table.distinct": "Distinct",
+    "table.expandtablecolumn": "Expand",
+    "table.expandrecordcolumn": "Expand",
+    "table.expandlistcolumn": "Expand",
+    "table.transformcolumns": "TransformColumn",
+    "table.replacevalue": "ReplaceValue",
+    "table.splitcolumn": "SplitColumn",
+    "table.firstn": "Limit",
+    "table.skip": "Limit",
+    "table.range": "Limit",
+    "table.buffer": "Buffer",
+    "table.promoteheaders": "PromoteHeaders",
+    "table.demoteheaders": "PromoteHeaders",
+    "value.nativequery": "NativeQuery",
+}
+
+_M_KEYWORD = re.compile(r"\b(let|in)\b")
+_M_CALL = re.compile(r"([A-Za-z_][A-Za-z0-9_.]*)\s*\(")
+_M_IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_.]*")
+
+
+def _m_mask(text: str) -> str:
+    """Blank out string literals and comments, preserving offsets for keyword scanning."""
+    chars = list(text)
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        if ch == '"':
+            j = i + 1
+            while j < n:
+                if text[j] == '"':
+                    if j + 1 < n and text[j + 1] == '"':
+                        j += 2
+                        continue
+                    break
+                j += 1
+            for k in range(i, min(j + 1, n)):
+                chars[k] = " "
+            i = j + 1
+        elif ch == "/" and i + 1 < n and text[i + 1] == "/":
+            j = text.find("\n", i)
+            j = n if j < 0 else j
+            for k in range(i, j):
+                chars[k] = " "
+            i = j
+        elif ch == "/" and i + 1 < n and text[i + 1] == "*":
+            j = text.find("*/", i + 2)
+            j = n if j < 0 else j + 2
+            for k in range(i, j):
+                chars[k] = " "
+            i = j
+        else:
+            i += 1
+    return "".join(chars)
+
+
+def _m_let_body(expression: str, masked: str):
+    """Text between the outermost `let` and the `in` that closes it."""
+    opener = _M_KEYWORD.search(masked)
+    if not opener or opener.group(1) != "let":
+        return None
+    depth, pos = 1, opener.end()
+    while depth:
+        token = _M_KEYWORD.search(masked, pos)
+        if not token:
+            return None
+        depth += 1 if token.group(1) == "let" else -1
+        pos = token.end()
+        if not depth:
+            return expression[opener.end():token.start()]
+    return None
+
+
+def _m_split_steps(body: str, masked_body: str) -> list:
+    """Split a let body on commas outside brackets, strings and nested let blocks."""
+    nesting = {t.start(): (1 if t.group(1) == "let" else -1)
+               for t in _M_KEYWORD.finditer(masked_body)}
+    parts, start, depth, inner = [], 0, 0, 0
+    for i, ch in enumerate(masked_body):
+        if i in nesting:
+            inner += nesting[i]
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == "," and depth == 0 and inner == 0:
+            parts.append(body[start:i])
+            start = i + 1
+    parts.append(body[start:])
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _m_step_name(fragment: str, masked_fragment: str):
+    """Split `Name = expr` at the assignment, tolerating #"quoted names"."""
+    depth = 0
+    for i, ch in enumerate(masked_fragment):
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == "=" and depth == 0:
+            if masked_fragment[i + 1:i + 2] in ("=", ">"):
+                continue
+            if i and masked_fragment[i - 1] in "<>=":
+                continue
+            prefix, value = masked_fragment[:i].rstrip(), fragment[i + 1:].strip()
+            if prefix.endswith("#"):
+                quoted = fragment[len(prefix) - 1:i].strip()
+                return quoted[2:-1].replace('""', '"'), value
+            tokens = list(_M_IDENT.finditer(prefix))
+            if tokens and tokens[-1].end() == len(prefix):
+                return tokens[-1].group(0), value
+            return None, fragment
+    return None, fragment
+
+
+# Calculated tables are surfaced by the scanner in the same expression field as M,
+# but they are DAX and must not be reported as an unclassified M connector.
+_DAX_TABLE_FUNCTIONS = frozenset("""
+ADDCOLUMNS ADDMISSINGITEMS ALL ALLEXCEPT ALLNOBLANKROW ALLSELECTED CALCULATETABLE
+CALENDAR CALENDARAUTO CROSSJOIN CURRENTGROUP DATATABLE DETAILROWS DISTINCT
+EXCEPT FILTER FILTERS GENERATE GENERATEALL GENERATESERIES GROUPBY INTERSECT
+NAMEOF NATURALINNERJOIN NATURALLEFTOUTERJOIN RELATEDTABLE ROLLUP ROLLUPADDISSUBTOTAL
+ROW SAMPLE SELECTCOLUMNS SUMMARIZE SUMMARIZECOLUMNS TOPN TREATAS UNION VALUES
+DATESBETWEEN DATESINPERIOD DATESYTD SUBSTITUTEWITHINDEX
+""".split())
+
+_DAX_VAR_RETURN = re.compile(r"\bVAR\b[\s\S]*\bRETURN\b")
+
+
+def _m_is_dax(masked: str, function) -> bool:
+    """True when the expression is a DAX calculated table rather than an M query."""
+    if re.search(r"\blet\b", masked):
+        return False
+    if not function or "." in function:
+        return bool(_DAX_VAR_RETURN.search(masked))
+    if function.upper() in _DAX_TABLE_FUNCTIONS:
+        return True
+    # DAX functions are conventionally upper case and never namespaced;
+    # M library calls are always Namespace.Function.
+    return len(function) > 1 and function.isupper()
+
+
+_M_PARAMETER_META = re.compile(r"IsParameterQuery\s*=\s*true", re.I)
+_M_BARE_IDENTIFIER = re.compile(r'#"[^"]+"|[A-Za-z_][A-Za-z0-9_.]*')
+
+
+def _m_classify_callless(text: str, masked: str, referenced) -> str:
+    """Categorise an expression that invokes no function at all."""
+    stripped = text.strip()
+    if _M_PARAMETER_META.search(masked):
+        return "Parameter"
+    if _M_BARE_IDENTIFIER.fullmatch(stripped):
+        name = stripped.strip('#"')
+        # A lone identifier is either another query in this model or, for a
+        # Direct Lake / DirectQuery table, the name of the underlying entity.
+        return "Query Reference" if name in referenced else "Entity Reference"
+    if stripped.startswith('"'):
+        return "Literal"
+    return "Unknown"
+
+
+def _m_first_call(masked_fragment: str):
+    match = _M_CALL.search(masked_fragment)
+    return match.group(1) if match else None
+
+
+def _m_source_detail(expression: str, function: str):
+    """First literal argument of the source call - usually server, url or path."""
+    if not function:
+        return None
+    match = re.search(re.escape(function) + r'\s*\(\s*"((?:[^"]|"")*)"', expression)
+    return match.group(1).replace('""', '"') if match else None
+
+
+def parse_power_query(expression: str, query_name: str, siblings=()) -> dict:
+    """Decompose an M expression into a query summary plus ordered steps."""
+    text = expression or ""
+    masked = _m_mask(text)
+    body = _m_let_body(text, masked)
+
+    if body is None:
+        raw_steps = [text.strip()] if text.strip() else []
+        named = [(query_name, s) for s in raw_steps]
+    else:
+        named = [_m_step_name(fragment, _m_mask(fragment))
+                 for fragment in _m_split_steps(body, _m_mask(body))]
+
+    steps, source_function = [], None
+    for order, (name, fragment) in enumerate(named, start=1):
+        masked_fragment = _m_mask(fragment)
+        function = _m_first_call(masked_fragment)
+        key = (function or "").lower()
+        if key in _M_SOURCE_CATEGORY and source_function is None:
+            source_function = function
+        if function:
+            category = _M_STEP_CATEGORY.get(key, "Source" if key in _M_SOURCE_CATEGORY else "Other")
+        elif any(c in masked_fragment for c in "{["):
+            category = "Navigation"
+        else:
+            category = "Source" if order == 1 else "Other"
+        steps.append({
+            "stepOrder": order,
+            "stepName": name or "Step {}".format(order),
+            "stepFunction": function,
+            "stepCategory": category,
+            "stepExpression": fragment,
+        })
+
+    if source_function is None:
+        source_function = next((s["stepFunction"] for s in steps if s["stepFunction"]), None)
+
+    referenced = sorted({
+        sib for sib in siblings
+        if sib and sib != query_name
+        and ('#"{}"'.format(sib) in text
+             or re.search(r"\b" + re.escape(sib) + r"\b", masked))
+    })
+
+    if _m_is_dax(masked, source_function):
+        category = "Calculated Table"
+    elif not text.strip():
+        category = "Other"
+    else:
+        category = _M_SOURCE_CATEGORY.get((source_function or "").lower())
+        if category is None:
+            if not source_function:
+                category = _m_classify_callless(text, masked, referenced)
+            elif source_function in referenced or "." not in source_function:
+                # A bare identifier that is not a known M library call is a
+                # user-defined function or another query in the same model.
+                category = "Custom Function"
+            else:
+                category = "Other"
+
+    return {
+        "expression": text,
+        "sourceFunction": source_function,
+        "sourceCategory": category,
+        "sourceDetail": _m_source_detail(text, source_function),
+        "hasNativeQuery": "value.nativequery" in masked.lower(),
+        "referencesQueries": as_json(referenced) if referenced else None,
+        "stepCount": len(steps),
+        "lineCount": text.count("\n") + 1 if text else 0,
+        "charCount": len(text),
+        "steps": steps,
+    }
+
+
+def record_power_query(ctx: dict, query_name: str, kind: str, expression: str, siblings=()) -> None:
+    if not (expression or "").strip():
+        return
+    parsed = parse_power_query(expression, query_name, siblings)
+    steps = parsed.pop("steps")
+    add("power_query", dict(ctx, queryName=query_name, queryKind=kind, **parsed))
+    for step in steps:
+        add("power_query_steps", dict(ctx, queryName=query_name, **step))
+
+
+_UPSTREAM_SPECS = (
+    ("upstreamDataflows", "Dataflow", "targetDataflowId"),
+    ("upstreamDatasets", "SemanticModel", "targetDatasetId"),
+    ("upstreamDatamarts", "Datamart", "targetDatamartId"),
+)
 
 
 def flatten_workspace(ws: dict) -> None:
@@ -549,6 +932,24 @@ def flatten_workspace(ws: dict) -> None:
             "webUrl": "https://app.powerbi.com/groups/{}/datasets/{}".format(ws_id, ds_id),
         })
 
+        model_ctx = {
+            "workspaceId": ws_id, "workspaceName": ws_name,
+            "semanticModelId": ds_id, "semanticModelName": ds_name,
+        }
+        shared = [e.get("name") for e in (ds.get("expressions") or [])]
+        siblings = shared + [t.get("name") for t in tables]
+
+        for kind_key, kind, id_key in _UPSTREAM_SPECS:
+            for link in ds.get(kind_key) or []:
+                if not isinstance(link, dict):
+                    continue
+                add("model_upstream", dict(
+                    model_ctx, upstreamKind=kind,
+                    upstreamId=link.get(id_key) or next(
+                        (v for k, v in link.items() if k.endswith("Id") and k != "groupId"), None),
+                    upstreamWorkspaceId=link.get("groupId"),
+                ))
+
         for expr in ds.get("expressions", []) or []:
             add("model_parameters", {
                 "workspaceId": ws_id, "workspaceName": ws_name,
@@ -556,6 +957,10 @@ def flatten_workspace(ws: dict) -> None:
                 "name": expr.get("name"), "description": expr.get("description"),
                 "expression": expr.get("expression"),
             })
+            text = expr.get("expression") or ""
+            kind = "Parameter" if "IsParameterQuery" in text else "SharedExpression"
+            record_power_query(dict(model_ctx, tableName=None), expr.get("name"),
+                               kind, text, siblings)
 
         for role in ds.get("roles", []) or []:
             perms = role.get("tablePermissions") or [{}]
@@ -593,6 +998,7 @@ def flatten_workspace(ws: dict) -> None:
 
         for tbl in tables:
             t_name = tbl.get("name")
+            sources = [s.get("expression") for s in (tbl.get("source") or [])]
             add("tables", {
                 "workspaceId": ws_id, "workspaceName": ws_name,
                 "semanticModelId": ds_id, "semanticModelName": ds_name,
@@ -600,8 +1006,12 @@ def flatten_workspace(ws: dict) -> None:
                 "isHidden": tbl.get("isHidden"), "storageMode": tbl.get("storageMode"),
                 "columnCount": len(tbl.get("columns", []) or []),
                 "measureCount": len(tbl.get("measures", []) or []),
-                "sourceExpression": as_json([s.get("expression") for s in (tbl.get("source") or [])]),
+                "sourceExpression": as_json(sources),
             })
+
+            for source in sources:
+                record_power_query(dict(model_ctx, tableName=t_name), t_name,
+                                   "Table", source or "", siblings)
 
             for col in tbl.get("columns", []) or []:
                 is_calc = str(col.get("columnType") or "").lower().startswith("calc")
@@ -656,6 +1066,14 @@ def flatten_workspace(ws: dict) -> None:
                 "artifactName": flow.get("name"),
                 "datasourceInstanceId": src.get("datasourceInstanceId"),
                 "gatewayId": src.get("gatewayId"), "details": as_json(src),
+            })
+        for rel in flow.get("relations", []) or []:
+            add("dataflow_relations", {
+                "workspaceId": ws_id, "workspaceName": ws_name,
+                "dataflowId": flow.get("objectId"), "dataflowName": flow.get("name"),
+                "dependentOnArtifactId": rel.get("dependentOnArtifactId"),
+                "dependentOnWorkspaceId": rel.get("workspaceId"),
+                "relationType": rel.get("relationType"), "usage": rel.get("usage"),
             })
 
     for key in ("lakehouses", "warehouses", "notebooks", "datamarts", "kqlDatabases",
@@ -730,15 +1148,18 @@ KEY_SPECS = {
     "workspaceKey": ["workspaceId"],
     "semanticModelKey": ["semanticModelId"],
     "modelTableKey": ["semanticModelId", "tableName"],
+    "powerQueryKey": ["semanticModelId", "queryName"],
 }
 
 TYPE_MAP = {
     "workspaceKey": "long", "semanticModelKey": "long", "modelTableKey": "long",
+    "powerQueryKey": "long",
     "dateKey": "int", "modifiedDateKey": "int",
     "reportCount": "int", "semanticModelCount": "int", "dashboardCount": "int",
     "dataflowCount": "int", "tableCount": "int", "columnCount": "int",
     "measureCount": "int", "daxLength": "int", "daxLineCount": "int",
-    "isHidden": "boolean", "isReadOnly": "boolean",
+    "stepCount": "int", "lineCount": "int", "charCount": "int", "stepOrder": "int",
+    "isHidden": "boolean", "isReadOnly": "boolean", "hasNativeQuery": "boolean",
     "date": "date", "year": "int", "quarterNumber": "int", "monthNumber": "int",
     "dayOfMonth": "int", "dayOfWeekNumber": "int",
 }

@@ -19,4 +19,8 @@ ref table 'Calculated Column'
 ref table 'Data Source'
 ref table Permission
 ref table 'Model Parameter'
+ref table 'Power Query'
+ref table 'Power Query Step'
+ref table 'Model Upstream'
+ref table 'Dataflow Relation'
 

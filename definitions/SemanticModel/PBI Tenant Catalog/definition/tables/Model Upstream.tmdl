@@ -1,0 +1,90 @@
+/// One row per upstream dataflow, semantic model or datamart feeding a semantic model.
+table 'Model Upstream'
+	lineageTag: 33330000-0000-4000-8000-000000000001
+
+	/// Number of upstream lineage links in scope.
+	measure 'Upstream Links' = COUNTROWS ( 'Model Upstream' )
+		formatString: #,##0
+		displayFolder: Lineage
+		lineageTag: 33330000-0000-4000-8000-000000000002
+
+	/// Semantic models that consume at least one upstream artifact.
+	measure 'Models With Upstream' = DISTINCTCOUNT ( 'Model Upstream'[Semantic Model Key] )
+		formatString: #,##0
+		displayFolder: Lineage
+		lineageTag: 33330000-0000-4000-8000-000000000003
+
+	/// Upstream links that point at a dataflow.
+	measure 'Upstream Dataflow Links' = CALCULATE ( [Upstream Links], 'Model Upstream'[Upstream Kind] = "Dataflow" )
+		formatString: #,##0
+		displayFolder: Lineage
+		lineageTag: 33330000-0000-4000-8000-000000000004
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: 33330000-0000-4000-8000-000000000005
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: 33330000-0000-4000-8000-000000000006
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Dataflow, SemanticModel or Datamart.
+	column 'Upstream Kind'
+		dataType: string
+		lineageTag: 33330000-0000-4000-8000-000000000007
+		sourceColumn: upstreamKind
+
+	/// Object id of the upstream artifact.
+	column 'Upstream Id'
+		dataType: string
+		lineageTag: 33330000-0000-4000-8000-000000000008
+		sourceColumn: upstreamId
+
+	/// Workspace that hosts the upstream artifact.
+	column 'Upstream Workspace Id'
+		dataType: string
+		lineageTag: 33330000-0000-4000-8000-000000000009
+		sourceColumn: upstreamWorkspaceId
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: 33330000-0000-4000-8000-00000000000a
+		sourceColumn: semanticModelId
+
+	column 'Semantic Model Name'
+		dataType: string
+		isHidden
+		lineageTag: 33330000-0000-4000-8000-00000000000b
+		sourceColumn: semanticModelName
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 33330000-0000-4000-8000-00000000000c
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: 33330000-0000-4000-8000-00000000000d
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 33330000-0000-4000-8000-00000000000e
+		sourceColumn: scanRunId
+
+	partition 'Model Upstream' = entity
+		mode: directLake
+		source
+			entityName: pbi_model_upstream
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

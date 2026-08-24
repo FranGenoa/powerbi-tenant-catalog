@@ -1,0 +1,197 @@
+/// One row per Power Query (M) query found in a semantic model.
+table 'Power Query'
+	lineageTag: 4a1c9b52-7d3e-4f18-9c60-2b8ea5417d01
+
+	/// Number of Power Query queries captured across semantic models.
+	measure 'Power Queries' = COUNTROWS ( 'Power Query' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 8f2d61a4-05c7-4b93-ae21-6c4f9d380b12
+
+	/// Queries that reach a dataflow as their source.
+	measure 'Dataflow Sourced Queries' = CALCULATE ( [Power Queries], 'Power Query'[Source Category] = "Dataflow" )
+		formatString: #,##0
+		displayFolder: Lineage
+		lineageTag: 2c6b83f9-4e10-47da-8b55-9137ac02f6e3
+
+	/// Distinct connector families used across all queries.
+	measure 'Source Categories Used' = DISTINCTCOUNT ( 'Power Query'[Source Category] )
+		formatString: #,##0
+		displayFolder: Lineage
+		lineageTag: 71a4e0dc-3b96-4c27-91f8-58e6b7d24a05
+
+	/// Queries that embed a hand-written native query, which blocks query folding.
+	measure 'Native Query Queries' = CALCULATE ( [Power Queries], 'Power Query'[Has Native Query] = TRUE () )
+		formatString: #,##0
+		displayFolder: Design Quality
+		lineageTag: d5837e21-9fac-4610-b3c8-0e29d7154bb6
+
+	/// Share of queries relying on a native query.
+	measure 'Native Query %' = DIVIDE ( [Native Query Queries], [Power Queries] )
+		formatString: 0.0%
+		displayFolder: Design Quality
+		lineageTag: 6e91c40b-27d5-4a83-8f16-b3c07d5928ef
+
+	/// Total transformation steps across the queries in scope.
+	measure 'Total Steps' = SUM ( 'Power Query'[Step Count] )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: 9b3f18e7-6c02-4d5a-a794-1f8b2e604c3d
+
+	/// Average number of applied steps per query.
+	measure 'Avg Steps per Query' = AVERAGE ( 'Power Query'[Step Count] )
+		formatString: #,##0.0
+		displayFolder: Complexity
+		lineageTag: 05ca7db3-8e41-4926-b0df-7a2c9614e58a
+
+	/// Highest applied-step count found in a single query.
+	measure 'Max Steps in a Query' = MAX ( 'Power Query'[Step Count] )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: 3d8016fe-b592-4c73-8a1e-4f06d9c2b871
+
+	/// Queries with 15 or more applied steps, a common refactor candidate.
+	measure 'Complex Queries' = CALCULATE ( [Power Queries], 'Power Query'[Step Count] >= 15 )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: c7b249a0-1d6e-4f85-93b2-8e50a7c3164f
+
+	column 'Power Query Key'
+		dataType: int64
+		isHidden
+		lineageTag: b18e5c07-42f9-4d31-a6c8-97e0b5d2f3a4
+		summarizeBy: none
+		sourceColumn: powerQueryKey
+
+	column 'Model Table Key'
+		dataType: int64
+		isHidden
+		lineageTag: 7fa3d915-6b28-4e04-9c17-2d8f60e4b539
+		summarizeBy: none
+		sourceColumn: modelTableKey
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: 41e6b8c2-903d-4a57-bf10-6c29e574d80b
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: 2a95f731-c46b-4180-85de-9f37b0c6e214
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Name of the query as it appears in the Power Query editor.
+	column 'Query Name'
+		dataType: string
+		lineageTag: e034b7a6-5f81-49c2-b73d-0a6e18f52c9b
+		sourceColumn: queryName
+
+	/// Table, SharedExpression or Parameter.
+	column 'Query Kind'
+		dataType: string
+		lineageTag: 8c17d4e9-2b60-4f3a-91c5-7de04a6b3f28
+		sourceColumn: queryKind
+
+	/// Model table this query loads into, when the query is a table query.
+	column 'Table Name'
+		dataType: string
+		lineageTag: 5b9028fc-a3d7-4e16-8042-c6f19b7e5d30
+		sourceColumn: tableName
+
+	/// Connector family, e.g. Dataflow, SQL Server, Web, Excel.
+	column 'Source Category'
+		dataType: string
+		lineageTag: f62a4b18-7c95-4d0e-a831-30b7e296c4d5
+		sourceColumn: sourceCategory
+
+	/// The M function that opens the query, e.g. Sql.Database.
+	column 'Source Function'
+		dataType: string
+		lineageTag: 19d7c630-8e42-4b95-a06f-5c831de74260
+		sourceColumn: sourceFunction
+
+	/// First literal argument of the source call, usually a server, path or URL.
+	column 'Source Detail'
+		dataType: string
+		lineageTag: a48f0d25-63be-4917-b5c2-7e910f6a38dc
+		sourceColumn: sourceDetail
+
+	/// True when the query calls Value.NativeQuery.
+	column 'Has Native Query'
+		dataType: boolean
+		lineageTag: 30c6e8b1-95d7-42fa-8e63-b41f072c9a5e
+		sourceColumn: hasNativeQuery
+
+	/// Other queries in the same model referenced by this one, as a JSON list.
+	column 'References Queries'
+		dataType: string
+		lineageTag: 7e2b510c-4a86-4d39-9a10-c8043b6e15af
+		sourceColumn: referencesQueries
+
+	/// Number of applied steps in the query.
+	column 'Step Count'
+		dataType: int64
+		lineageTag: 6d4a9f83-b170-4e2c-85a9-3f60c17be429
+		summarizeBy: sum
+		sourceColumn: stepCount
+
+	column 'Line Count'
+		dataType: int64
+		isHidden
+		lineageTag: b503e7d6-2c19-4f84-a760-95e21d3ac86f
+		summarizeBy: sum
+		sourceColumn: lineCount
+
+	column 'Char Count'
+		dataType: int64
+		isHidden
+		lineageTag: 84f1c5ea-0d63-4a97-b2e5-16c709d4b83e
+		summarizeBy: sum
+		sourceColumn: charCount
+
+	/// Full M expression behind the query.
+	column 'Expression'
+		dataType: string
+		lineageTag: c9061e47-5b3a-4d82-9fe1-70b846c25d3a
+		sourceColumn: expression
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: 2f57b9e0-8c14-4a63-95d7-e0b31674ca29
+		sourceColumn: semanticModelId
+
+	column 'Semantic Model Name'
+		dataType: string
+		isHidden
+		lineageTag: 4e8d3b16-79c0-45fa-8163-9c72e05db4a7
+		sourceColumn: semanticModelName
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 917c25de-4b60-4e38-a2f5-6d80139bc74e
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: 60ba4f97-1e35-4dc2-8047-b591e6c3728d
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: d7e10c58-3f96-42ab-b40e-8c5729061fd3
+		sourceColumn: scanRunId
+
+	partition 'Power Query' = entity
+		mode: directLake
+		source
+			entityName: pbi_power_query
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

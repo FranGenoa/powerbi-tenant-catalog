@@ -1,0 +1,94 @@
+/// One row per dataflow to downstream artifact relationship reported by the scanner.
+table 'Dataflow Relation'
+	lineageTag: 44440000-0000-4000-8000-000000000001
+
+	/// Number of dataflow to artifact relationships in scope.
+	measure 'Dataflow Relations' = COUNTROWS ( 'Dataflow Relation' )
+		formatString: #,##0
+		displayFolder: Lineage
+		lineageTag: 44440000-0000-4000-8000-000000000002
+
+	/// Dataflows that feed at least one downstream artifact.
+	measure 'Dataflows With Consumers' = DISTINCTCOUNT ( 'Dataflow Relation'[Dataflow Id] )
+		formatString: #,##0
+		displayFolder: Lineage
+		lineageTag: 44440000-0000-4000-8000-000000000003
+
+	/// Relationships where the dataflow pushes data into the artifact.
+	measure 'Push Data Relations' = CALCULATE ( [Dataflow Relations], 'Dataflow Relation'[Usage] = "PushData" )
+		formatString: #,##0
+		displayFolder: Lineage
+		lineageTag: 44440000-0000-4000-8000-000000000004
+
+	/// Distinct downstream artifacts fed by dataflows.
+	measure 'Downstream Artifacts' = DISTINCTCOUNT ( 'Dataflow Relation'[Dependent On Artifact Id] )
+		formatString: #,##0
+		displayFolder: Lineage
+		lineageTag: 44440000-0000-4000-8000-000000000005
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: 44440000-0000-4000-8000-000000000006
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Name of the dataflow.
+	column 'Dataflow Name'
+		dataType: string
+		lineageTag: 44440000-0000-4000-8000-000000000007
+		sourceColumn: dataflowName
+
+	column 'Dataflow Id'
+		dataType: string
+		lineageTag: 44440000-0000-4000-8000-000000000008
+		sourceColumn: dataflowId
+
+	/// Object id of the artifact that depends on this dataflow.
+	column 'Dependent On Artifact Id'
+		dataType: string
+		lineageTag: 44440000-0000-4000-8000-000000000009
+		sourceColumn: dependentOnArtifactId
+
+	/// Workspace hosting the dependent artifact.
+	column 'Dependent On Workspace Id'
+		dataType: string
+		lineageTag: 44440000-0000-4000-8000-00000000000a
+		sourceColumn: dependentOnWorkspaceId
+
+	/// How the dataflow is used, e.g. PushData.
+	column 'Usage'
+		dataType: string
+		lineageTag: 44440000-0000-4000-8000-00000000000b
+		sourceColumn: usage
+
+	/// Relationship strength, e.g. HiddenInWorkspace or WeakAssociation.
+	column 'Relation Type'
+		dataType: string
+		lineageTag: 44440000-0000-4000-8000-00000000000c
+		sourceColumn: relationType
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: 44440000-0000-4000-8000-00000000000d
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: 44440000-0000-4000-8000-00000000000e
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 44440000-0000-4000-8000-00000000000f
+		sourceColumn: scanRunId
+
+	partition 'Dataflow Relation' = entity
+		mode: directLake
+		source
+			entityName: pbi_dataflow_relations
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+

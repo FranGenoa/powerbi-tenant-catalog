@@ -1,0 +1,134 @@
+/// One row per applied step inside a Power Query query.
+table 'Power Query Step'
+	lineageTag: 1c74b8e0-95d2-4a63-8f17-40be3d76c9a5
+
+	/// Number of applied steps in scope.
+	measure 'Query Steps' = COUNTROWS ( 'Power Query Step' )
+		formatString: #,##0
+		displayFolder: Inventory
+		lineageTag: 5a09e3f6-8b41-4c27-90da-e7156b284fc3
+
+	/// Distinct M functions used across the steps in scope.
+	measure 'Distinct Step Functions' = DISTINCTCOUNT ( 'Power Query Step'[Step Function] )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: e6152d84-3c70-49ba-b8e5-2f9061a7d34c
+
+	/// Merge and join steps, which are the most common refresh cost driver.
+	measure 'Join Steps' = CALCULATE ( [Query Steps], 'Power Query Step'[Step Category] = "Join" )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: 9d38c015-7e64-42fa-85b1-c6407e29b58d
+
+	/// Steps that change column data types.
+	measure 'Change Type Steps' = CALCULATE ( [Query Steps], 'Power Query Step'[Step Category] = "ChangeType" )
+		formatString: #,##0
+		displayFolder: Complexity
+		lineageTag: 3fb7a629-0d58-4e91-a473-8c15e0d962b7
+
+	column 'Power Query Key'
+		dataType: int64
+		isHidden
+		lineageTag: 72e0d146-b83f-4c95-a610-5d972be04f38
+		summarizeBy: none
+		sourceColumn: powerQueryKey
+
+	column 'Model Table Key'
+		dataType: int64
+		isHidden
+		lineageTag: c418a7d2-9b60-4e13-85fa-7c204d69e831
+		summarizeBy: none
+		sourceColumn: modelTableKey
+
+	column 'Semantic Model Key'
+		dataType: int64
+		isHidden
+		lineageTag: 8b62f4c1-05e7-4936-b2d8-419a6ce70b53
+		summarizeBy: none
+		sourceColumn: semanticModelKey
+
+	column 'Workspace Key'
+		dataType: int64
+		isHidden
+		lineageTag: 04a9c7e3-6015-42db-9f87-b3e0d5162947
+		summarizeBy: none
+		sourceColumn: workspaceKey
+
+	/// Query this step belongs to.
+	column 'Query Name'
+		dataType: string
+		lineageTag: b7d31068-4e29-4fa5-8c30-92e6014b7da3
+		sourceColumn: queryName
+
+	column 'Table Name'
+		dataType: string
+		lineageTag: 26fc94a8-d073-4b51-a9e6-8154b0d37c29
+		sourceColumn: tableName
+
+	/// Position of the step in the applied-steps list.
+	column 'Step Order'
+		dataType: int64
+		lineageTag: 5e807b13-92ca-4d6f-b048-71c9e3a5f024
+		summarizeBy: none
+		sourceColumn: stepOrder
+
+	/// Step name as shown in the Power Query editor.
+	column 'Step Name'
+		dataType: string
+		lineageTag: 91a6e0d7-3b48-45c2-8f61-d072c4e91b5a
+		sourceColumn: stepName
+
+	/// M function driving the step, e.g. Table.SelectRows.
+	column 'Step Function'
+		dataType: string
+		lineageTag: db4270f9-8e15-4a36-b7c0-63d914ea5820
+		sourceColumn: stepFunction
+
+	/// Grouped operation type, e.g. Filter, Join, AddColumn, Navigation.
+	column 'Step Category'
+		dataType: string
+		lineageTag: 3c0d58a1-746e-4b92-95f3-8ad2607bc41e
+		sourceColumn: stepCategory
+
+	/// The M fragment for this single step.
+	column 'Step Expression'
+		dataType: string
+		lineageTag: a7581c60-2d94-4e37-b8a1-05f6c93e2704
+		sourceColumn: stepExpression
+
+	column 'Semantic Model Id'
+		dataType: string
+		isHidden
+		lineageTag: 6f39b502-c817-4ad6-90e4-2b71c85340df
+		sourceColumn: semanticModelId
+
+	column 'Semantic Model Name'
+		dataType: string
+		isHidden
+		lineageTag: 08e4d371-5b96-42ca-8137-e9c60b45a37f
+		sourceColumn: semanticModelName
+
+	column 'Workspace Id'
+		dataType: string
+		isHidden
+		lineageTag: fc927e05-4361-48bd-a7f2-16d0e8b539ca
+		sourceColumn: workspaceId
+
+	column 'Workspace Name'
+		dataType: string
+		isHidden
+		lineageTag: 7b1e46da-0c85-4f29-9360-a5d27e1c8b40
+		sourceColumn: workspaceName
+
+	column 'Scan Run Id'
+		dataType: string
+		isHidden
+		lineageTag: 2d5083fc-7194-4eb6-85c0-4f37b96e12ad
+		sourceColumn: scanRunId
+
+	partition 'Power Query Step' = entity
+		mode: directLake
+		source
+			entityName: pbi_power_query_steps
+			expressionSource: 'DirectLake - PBICatalogLakehouse'
+
